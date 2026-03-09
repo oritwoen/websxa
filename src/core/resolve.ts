@@ -1,4 +1,4 @@
-import { builtinProviders, type WebSearchProviderName } from '../index.ts'
+import { builtinProviders, type WebSearchProviderName } from './providers.ts'
 import { has } from './registry.ts'
 
 const envKeys: Record<string, WebSearchProviderName> = {
@@ -31,7 +31,11 @@ export function resolveDefaultProvider(): WebSearchProviderName {
     }
   }
 
-  return 'searxng'
+  if (has('searxng')) {
+    return 'searxng'
+  }
+
+  throw new Error('No web search provider configured. Set an API key env var or register a provider.')
 }
 
 export interface ProviderStatus {
