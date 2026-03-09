@@ -1,14 +1,6 @@
 export { version } from './version.ts'
 
-export const builtinProviders = [
-  'brave',
-  'exa',
-  'searxng',
-  'serpapi',
-  'tavily',
-] as const
-
-export type WebSearchProviderName = typeof builtinProviders[number]
+export { builtinProviders, type WebSearchProviderName } from './core/providers.ts'
 
 export type { SearchResult, SearchOptions, SearchProvider, ProviderConfig, ProviderFactory, ClientOptions } from './core/types.ts'
 

@@ -1,6 +1,6 @@
 import { tool } from 'ai'
 import { z } from 'zod'
-import { builtinProviders } from './index.ts'
+import { builtinProviders } from './core/providers.ts'
 import { create } from './core/registry.ts'
 import { searchAll } from './core/all.ts'
 import { resolveDefaultProvider, listProviders } from './core/resolve.ts'
