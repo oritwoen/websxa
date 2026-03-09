@@ -1,5 +1,6 @@
 import type { SearchResult, SearchOptions } from './types.ts'
-import { create, providers } from './registry.ts'
+import { create } from './registry.ts'
+import { detectAvailableProviders } from './resolve.ts'
 
 export interface SearchAllOptions extends SearchOptions {
   providers?: string[]
@@ -37,29 +38,7 @@ export async function searchAll(query: string, options?: SearchAllOptions): Prom
   return deduplicateByUrl(allResults)
 }
 
-function detectAvailableProviders(): string[] {
-  const envMap: Record<string, string> = {
-    EXA_API_KEY: 'exa',
-    BRAVE_API_KEY: 'brave',
-    TAVILY_API_KEY: 'tavily',
-    SERPAPI_API_KEY: 'serpapi',
-  }
 
-  const available: string[] = []
-
-  for (const [envVar, name] of Object.entries(envMap)) {
-    if (process.env[envVar]) {
-      available.push(name)
-    }
-  }
-
-  const registered = providers()
-  if (registered.includes('searxng')) {
-    available.push('searxng')
-  }
-
-  return available
-}
 
 function deduplicateByUrl(results: SearchAllResult[]): SearchAllResult[] {
   const seen = new Map<string, SearchAllResult>()

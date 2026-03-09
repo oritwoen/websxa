@@ -8,6 +8,7 @@ export default defineBuildConfig({
         './src/index.ts',
         './src/cli.ts',
         './src/ai.ts',
+        './src/opencode.ts',
       ],
     },
   ],

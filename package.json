@@ -20,6 +20,10 @@
     "./ai": {
       "types": "./dist/ai.d.mts",
       "import": "./dist/ai.mjs"
+    },
+    "./opencode": {
+      "types": "./dist/opencode.d.mts",
+      "import": "./dist/opencode.mjs"
     }
   },
   "main": "./dist/index.mjs",
@@ -53,6 +57,7 @@
     "typescript"
   ],
   "devDependencies": {
+    "@opencode-ai/plugin": "^1.2.23",
     "@types/node": "latest",
     "ai": "^6.0.116",
     "changelogen": "latest",
@@ -62,15 +67,20 @@
     "zod": "^4.3.6"
   },
   "dependencies": {
+    "@toon-format/toon": "^2.1.0",
     "citty": "latest",
     "consola": "latest",
     "ofetch": "^1.5.1"
   },
   "peerDependencies": {
+    "@opencode-ai/plugin": ">=1.0.0",
     "ai": "^6.0.116",
     "zod": "^4.3.6"
   },
   "peerDependenciesMeta": {
+    "@opencode-ai/plugin": {
+      "optional": true
+    },
     "ai": {
       "optional": true
     },

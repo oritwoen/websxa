@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@toon-format/toon':
+        specifier: ^2.1.0
+        version: 2.1.0
       citty:
         specifier: latest
         version: 0.2.1
@@ -18,6 +21,9 @@ importers:
         specifier: ^1.5.1
         version: 1.5.1
     devDependencies:
+      '@opencode-ai/plugin':
+        specifier: ^1.2.23
+        version: 1.2.23
       '@types/node':
         specifier: latest
         version: 25.3.5
@@ -259,6 +265,12 @@ packages:
 
   '@napi-rs/wasm-runtime@1.1.1':
     resolution: {integrity: sha512-p64ah1M1ld8xjWv3qbvFwHiFVWrq1yFvV4f7w+mzaqiR4IlSgkqhcRdHwsGgomwzBH51sRY4NEowLxnaBjcW/A==}
+
+  '@opencode-ai/plugin@1.2.23':
+    resolution: {integrity: sha512-5DRhitKrMK02u0AKrF+jIK+gUj0GyzN34bXkABXgNMTYDPwiMPkh4UPDJjjRrlofRgWQgmSLFc0nARHX4f92qA==}
+
+  '@opencode-ai/sdk@1.2.23':
+    resolution: {integrity: sha512-f0qtJ5GFsEK8fCgT13zL7Ev7lFt03mf9HTQqmpJEgJpDaSx3Mb3ZGJCsfyw48SAASISkq+4Lct/4P17CKG7xUg==}
 
   '@opentelemetry/api@1.9.0':
     resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
@@ -505,6 +517,9 @@ packages:
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
+
+  '@toon-format/toon@2.1.0':
+    resolution: {integrity: sha512-JwWptdF5eOA0HaQxbKAzkpQtR4wSWTEfDlEy/y3/4okmOAX1qwnpLZMmtEWr+ncAhTTY1raCKH0kteHhSXnQqg==}
 
   '@tybys/wasm-util@0.10.1':
     resolution: {integrity: sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==}
@@ -1018,6 +1033,9 @@ packages:
     resolution: {integrity: sha512-h3Fbisa2nKGPxCpm89Hk33lBLsnaGBvctQopaBSOW/uIs6FTe1ATyAnKFJrzVs9vpGdsTe73WF3V4lIsk4Gacw==}
     engines: {node: '>=18'}
 
+  zod@4.1.8:
+    resolution: {integrity: sha512-5R1P+WwQqmmMIEACyzSvo4JXHY5WiAFHRMg+zBZKgKS+Q1viRa0C1hmUKtHltoIFKtIdki3pRxkmpP74jnNYHQ==}
+
   zod@4.3.6:
     resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
 
@@ -1178,6 +1196,13 @@ snapshots:
       '@tybys/wasm-util': 0.10.1
     optional: true
 
+  '@opencode-ai/plugin@1.2.23':
+    dependencies:
+      '@opencode-ai/sdk': 1.2.23
+      zod: 4.1.8
+
+  '@opencode-ai/sdk@1.2.23': {}
+
   '@opentelemetry/api@1.9.0': {}
 
   '@oxc-project/types@0.115.0': {}
@@ -1307,6 +1332,8 @@ snapshots:
     optional: true
 
   '@standard-schema/spec@1.1.0': {}
+
+  '@toon-format/toon@2.1.0': {}
 
   '@tybys/wasm-util@0.10.1':
     dependencies:
@@ -1859,5 +1886,7 @@ snapshots:
   wsl-utils@0.1.0:
     dependencies:
       is-wsl: 3.1.1
+
+  zod@4.1.8: {}
 
   zod@4.3.6: {}
