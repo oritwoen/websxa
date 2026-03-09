@@ -1,14 +1,15 @@
-# webxa
+# websxa
 
 [![npm version](https://img.shields.io/npm/v/websxa?style=flat&colorA=130f40&colorB=474787)](https://npmjs.com/package/websxa)
 [![npm downloads](https://img.shields.io/npm/dm/websxa?style=flat&colorA=130f40&colorB=474787)](https://npm.chart.dev/websxa)
 [![license](https://img.shields.io/github/license/oritwoen/websxa?style=flat&colorA=130f40&colorB=474787)](https://github.com/oritwoen/websxa/blob/main/LICENSE)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/oritwoen/websxa)
 
 One API for Brave, Exa, Tavily, SerpAPI, and SearXNG. Write your search logic once, swap the provider string, done.
 
-If you're building an AI agent or a CLI tool that needs web search, you don't want to hardcode a single provider's API. They all return roughly the same thing — a list of URLs with titles and snippets — but the auth, endpoints, and response shapes are all different. Exa uses POST with `x-api-key`, Brave uses GET with `X-Subscription-Token`, Tavily puts the key in the request body. And so on.
+If you're building an AI agent or a CLI tool that needs web search, you don't want to hardcode a single provider's API. They all return roughly the same thing, a list of URLs with titles and snippets, but the auth, endpoints, and response shapes are all different. Exa uses POST with `x-api-key`, Brave uses GET with `X-Subscription-Token`, Tavily puts the key in the request body. And so on.
 
-`webxa` normalizes all of that behind a single interface. It also ships an [AI SDK](https://ai-sdk.dev/) tool and a CLI.
+`websxa` normalizes all of that behind a single interface. It also ships an [AI SDK](https://ai-sdk.dev/) tool and a CLI.
 
 ## Install
 
@@ -67,7 +68,7 @@ for (const result of results) {
 }
 ```
 
-`searchAll` uses `Promise.allSettled` internally — if one provider fails, the others still return. Results are deduplicated by URL (normalized, UTM params stripped). When duplicates exist, the result with the higher score wins.
+`searchAll` uses `Promise.allSettled` internally, so if one provider fails, the others still return. Results are deduplicated by URL (normalized, UTM params stripped). When duplicates exist, the result with the higher score wins.
 
 You can also specify which providers to query:
 
@@ -80,7 +81,7 @@ const results = await searchAll('query', {
 
 ### AI SDK tool
 
-The `webxa/ai` subpath exports a ready-made tool compatible with [Vercel AI SDK](https://ai-sdk.dev/docs/foundations/tools):
+The `websxa/ai` subpath exports a ready-made tool compatible with [Vercel AI SDK](https://ai-sdk.dev/docs/foundations/tools):
 
 ```typescript
 import { generateText } from 'ai'
@@ -128,11 +129,11 @@ websxa providers
 |----------|---------|------|-----------|
 | Brave | `BRAVE_API_KEY` | Header | 2k queries/mo |
 | Exa | `EXA_API_KEY` | Header | 1k queries/mo |
-| SearXNG | — | None | Self-hosted |
+| SearXNG | - | None | Self-hosted |
 | SerpAPI | `SERPAPI_API_KEY` | Query param | 100 queries/mo |
 | Tavily | `TAVILY_API_KEY` | Body | 1k queries/mo |
 
-SearXNG requires no API key — it's a self-hosted metasearch engine. By default webxa connects to `http://localhost:8080`. Override with `baseURL`:
+SearXNG requires no API key. It's a self-hosted metasearch engine. By default websxa connects to `http://localhost:8080`. Override with `baseURL`:
 
 ```typescript
 const searx = create('searxng', { baseURL: 'https://searx.example.com' })
@@ -184,6 +185,21 @@ interface SearchResult {
 ```
 
 Optional fields depend on what the provider returns. Exa provides `score`, `text`, and `highlights`. Brave provides `favicon`. Not all providers populate all fields.
+
+Search options you can pass to `.search()` or `searchAll`:
+
+```typescript
+interface SearchOptions {
+  maxResults?: number
+  includeDomains?: string[]
+  excludeDomains?: string[]
+  startPublishedDate?: string
+  endPublishedDate?: string
+  category?: string
+}
+```
+
+`maxResults` works with every provider. Domain filtering and date ranges are currently Exa-specific. `category` is supported by Exa and SearXNG.
 
 ## Development
 
