@@ -1,5 +1,6 @@
 import type { SearchResult, SearchOptions } from './types.ts'
-import { create } from './registry.ts'
+import { UnknownProviderError } from './errors.ts'
+import { create, has } from './registry.ts'
 import { detectAvailableProviders } from './resolve.ts'
 
 export interface SearchAllOptions extends SearchOptions {
@@ -17,6 +18,14 @@ export interface SearchAllResult extends SearchResult {
  */
 export async function searchAll(query: string, options?: SearchAllOptions): Promise<SearchAllResult[]> {
   const { providers: providerList, ...searchOptions } = options ?? {}
+
+  if (providerList) {
+    const unknown = providerList.find(name => !has(name))
+    if (unknown) {
+      throw new UnknownProviderError(unknown)
+    }
+  }
+
   const providerNames = providerList ?? detectAvailableProviders()
 
   const settled = await Promise.allSettled(
