@@ -32,6 +32,6 @@ jobs:
             echo "Tag version ($TAG_VERSION) doesn't match package.json ($PKG_VERSION)"
             exit 1
           fi
-      - run: pnpm --filter opencode-websxa publish --access public --no-git-checks
+      - run: pnpm --filter opencode-websxa publish --access public --no-git-checks --provenance
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
