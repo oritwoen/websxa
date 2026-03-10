@@ -15,7 +15,6 @@ export default defineCommand({
     provider: {
       type: 'string',
       description: 'Search provider to use',
-      default: 'exa',
     },
     'max-results': {
       type: 'string',
@@ -32,10 +31,13 @@ export default defineCommand({
     await import('../providers/index.ts')
 
     const { create } = await import('../core/registry.ts')
+    const { resolveDefaultProvider } = await import('../core/resolve.ts')
     const { AuthError, UnknownProviderError } = await import('../core/errors.ts')
+    let providerName = args.provider
 
     try {
-      const provider = create(args.provider, {})
+      providerName = args.provider || resolveDefaultProvider()
+      const provider = create(providerName, {})
       const results = await provider.search(args.query, {
         maxResults: parseInt(args['max-results'], 10),
       })
@@ -64,18 +66,29 @@ export default defineCommand({
     }
     catch (error) {
       if (error instanceof AuthError) {
-        consola.error(`Authentication failed for provider "${args.provider}".`)
-        consola.info(`Set the ${args.provider.toUpperCase()}_API_KEY environment variable.`)
+        const authProvider = providerName || error.provider
+        consola.error(`Authentication failed for provider "${authProvider}".`)
+        consola.info(`Set the ${authProvider.toUpperCase()}_API_KEY environment variable.`)
         process.exit(1)
       }
       if (error instanceof UnknownProviderError) {
         const { providers } = await import('../core/registry.ts')
-        consola.error(`Unknown provider: ${args.provider}`)
+        consola.error(`Unknown provider: ${providerName}`)
         const available = providers()
         if (available.length > 0) {
           consola.info(`Available providers: ${available.join(', ')}`)
         } else {
           consola.info('No providers registered. Import a provider first.')
+        }
+        process.exit(1)
+      }
+      if (error instanceof Error && error.message.includes('No web search provider configured')) {
+        const { providers } = await import('../core/registry.ts')
+        const available = providers()
+        consola.error(error.message)
+        if (available.length > 0) {
+          consola.info(`Registered providers: ${available.join(', ')}`)
+          consola.info('Set one provider API key env var or pass --provider explicitly.')
         }
         process.exit(1)
       }
