@@ -1,22 +1,6 @@
 import { defineCommand } from 'citty'
 import { consola } from 'consola'
-import { builtinProviders, version } from '../index.ts'
-
-const NO_KEY_REQUIRED = new Set(['searxng'])
-
-interface ProviderStatus {
-  name: string
-  envVar: string | null
-  configured: boolean
-}
-
-function getProviderStatus(name: string): ProviderStatus {
-  if (NO_KEY_REQUIRED.has(name)) {
-    return { name, envVar: null, configured: true }
-  }
-  const envVar = `${name.toUpperCase()}_API_KEY`
-  return { name, envVar, configured: !!process.env[envVar] }
-}
+import { listProviders, version } from '../index.ts'
 
 export default defineCommand({
   meta: {
@@ -30,8 +14,9 @@ export default defineCommand({
       default: false,
     },
   },
-  run({ args }) {
-    const status = builtinProviders.map(getProviderStatus)
+  async run({ args }) {
+    await import('../providers/index.ts')
+    const status = listProviders()
 
     if (args.json) {
       process.stdout.write(`${JSON.stringify(status, null, 2)}\n`)

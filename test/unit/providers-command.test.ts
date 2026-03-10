@@ -38,8 +38,8 @@ describe('providers command', () => {
   })
 
   describe('human output', () => {
-    it('lists all built-in providers', () => {
-      providersCommand.run!({ args: { json: false } } as never)
+    it('lists all built-in providers', async () => {
+      await providersCommand.run!({ args: { json: false } } as never)
 
       const output = mockLog.mock.calls.map(c => String(c[0])).join('\n')
       for (const name of builtinProviders) {
@@ -47,26 +47,26 @@ describe('providers command', () => {
       }
     })
 
-    it('shows configured provider with checkmark when env var is set', () => {
+    it('shows configured provider with checkmark when env var is set', async () => {
       process.env.EXA_API_KEY = 'test-key'
 
-      providersCommand.run!({ args: { json: false } } as never)
+      await providersCommand.run!({ args: { json: false } } as never)
 
       const output = mockLog.mock.calls.map(c => String(c[0])).join('\n')
       expect(output).toContain('\u2713')
       expect(output).toContain('exa')
     })
 
-    it('shows unconfigured provider with cross and env var hint', () => {
-      providersCommand.run!({ args: { json: false } } as never)
+    it('shows unconfigured provider with cross and env var hint', async () => {
+      await providersCommand.run!({ args: { json: false } } as never)
 
       const output = mockLog.mock.calls.map(c => String(c[0])).join('\n')
       expect(output).toContain('\u2717')
       expect(output).toContain('EXA_API_KEY not set')
     })
 
-    it('shows searxng as configured without any env var', () => {
-      providersCommand.run!({ args: { json: false } } as never)
+    it('shows searxng as configured without any env var', async () => {
+      await providersCommand.run!({ args: { json: false } } as never)
 
       const lines = mockLog.mock.calls.map(c => String(c[0]))
       const searxngLine = lines.find(l => l.includes('searxng'))
@@ -76,8 +76,8 @@ describe('providers command', () => {
   })
 
   describe('JSON output', () => {
-    it('outputs array of provider status objects', () => {
-      providersCommand.run!({ args: { json: true } } as never)
+    it('outputs array of provider status objects', async () => {
+      await providersCommand.run!({ args: { json: true } } as never)
 
       expect(writeSpy).toHaveBeenCalledOnce()
       const raw = String(writeSpy.mock.calls[0][0])
@@ -87,10 +87,10 @@ describe('providers command', () => {
       expect(parsed).toHaveLength(builtinProviders.length)
     })
 
-    it('includes name, envVar, and configured fields', () => {
+    it('includes name, envVar, and configured fields', async () => {
       process.env.BRAVE_API_KEY = 'test-key'
 
-      providersCommand.run!({ args: { json: true } } as never)
+      await providersCommand.run!({ args: { json: true } } as never)
 
       const parsed = JSON.parse(String(writeSpy.mock.calls[0][0]))
       const brave = parsed.find((p: { name: string }) => p.name === 'brave')
@@ -102,8 +102,8 @@ describe('providers command', () => {
       })
     })
 
-    it('marks unconfigured providers correctly', () => {
-      providersCommand.run!({ args: { json: true } } as never)
+    it('marks unconfigured providers correctly', async () => {
+      await providersCommand.run!({ args: { json: true } } as never)
 
       const parsed = JSON.parse(String(writeSpy.mock.calls[0][0]))
       const exa = parsed.find((p: { name: string }) => p.name === 'exa')
@@ -115,8 +115,8 @@ describe('providers command', () => {
       })
     })
 
-    it('marks searxng as configured with null envVar', () => {
-      providersCommand.run!({ args: { json: true } } as never)
+    it('marks searxng as configured with null envVar', async () => {
+      await providersCommand.run!({ args: { json: true } } as never)
 
       const parsed = JSON.parse(String(writeSpy.mock.calls[0][0]))
       const searxng = parsed.find((p: { name: string }) => p.name === 'searxng')
@@ -128,8 +128,8 @@ describe('providers command', () => {
       })
     })
 
-    it('reflects env var changes between calls', () => {
-      providersCommand.run!({ args: { json: true } } as never)
+    it('reflects env var changes between calls', async () => {
+      await providersCommand.run!({ args: { json: true } } as never)
       const before = JSON.parse(String(writeSpy.mock.calls[0][0]))
       const tavBefore = before.find((p: { name: string }) => p.name === 'tavily')
       expect(tavBefore.configured).toBe(false)
@@ -137,7 +137,7 @@ describe('providers command', () => {
       writeSpy.mockClear()
       process.env.TAVILY_API_KEY = 'test-key'
 
-      providersCommand.run!({ args: { json: true } } as never)
+      await providersCommand.run!({ args: { json: true } } as never)
       const after = JSON.parse(String(writeSpy.mock.calls[0][0]))
       const tavAfter = after.find((p: { name: string }) => p.name === 'tavily')
       expect(tavAfter.configured).toBe(true)
