@@ -71,6 +71,13 @@ export class UnknownProviderError extends WebxaError {
  * Maps HTTP status codes to specific error types (401 → AuthError, 429 → RateLimitError).
  */
 export function normalizeError(error: unknown, provider?: string): WebxaError {
+  if (error instanceof HTTPError && error.statusCode === 401) {
+    return new AuthError(
+      `Authentication failed: ${error.body || 'Invalid or missing API key'}`,
+      provider || 'unknown'
+    )
+  }
+
   if (error instanceof WebxaError) {
     return error
   }
