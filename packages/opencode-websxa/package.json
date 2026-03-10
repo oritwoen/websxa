@@ -1,0 +1,50 @@
+{
+  "name": "opencode-websxa",
+  "version": "0.1.2",
+  "description": "OpenCode plugin for websxa web search. Temporary standalone package until subpath imports land upstream.",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "author": "oritwoen (https://github.com/oritwoen)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oritwoen/websxa.git",
+    "directory": "packages/opencode-websxa"
+  },
+  "homepage": "https://github.com/oritwoen/websxa#readme",
+  "bugs": "https://github.com/oritwoen/websxa/issues",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "obuild",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "websxa": "workspace:*"
+  },
+  "devDependencies": {
+    "@opencode-ai/plugin": "^1.2.23",
+    "obuild": "latest",
+    "typescript": "latest"
+  },
+  "peerDependencies": {
+    "@opencode-ai/plugin": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@opencode-ai/plugin": {
+      "optional": true
+    }
+  }
+}
