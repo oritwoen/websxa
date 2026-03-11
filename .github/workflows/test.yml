@@ -21,9 +21,9 @@ jobs:
         run: pnpm typecheck
       - name: Build
         run: pnpm build
-      - name: Typecheck (opencode-websxa)
-        run: pnpm --filter opencode-websxa typecheck
-      - name: Build (opencode-websxa)
-        run: pnpm --filter opencode-websxa build
+      - name: Typecheck (websxa-opencode)
+        run: pnpm --filter websxa-opencode typecheck
+      - name: Build (websxa-opencode)
+        run: pnpm --filter websxa-opencode build
       - name: Test
         run: pnpm test:run

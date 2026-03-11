@@ -1,4 +1,4 @@
-name: Release (opencode-websxa)
+name: Release (websxa-opencode)
 
 permissions:
   id-token: write
@@ -23,15 +23,15 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: pnpm i
       - run: pnpm build
-      - run: pnpm --filter opencode-websxa build
+      - run: pnpm --filter websxa-opencode build
       - name: Verify tag matches package version
         run: |
           TAG_VERSION="${GITHUB_REF#refs/tags/opencode-v}"
-          PKG_VERSION=$(node -p "require('./packages/opencode-websxa/package.json').version")
+          PKG_VERSION=$(node -p "require('./packages/websxa-opencode/package.json').version")
           if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
             echo "Tag version ($TAG_VERSION) doesn't match package.json ($PKG_VERSION)"
             exit 1
           fi
-      - run: pnpm --filter opencode-websxa publish --access public --no-git-checks --provenance
+      - run: pnpm --filter websxa-opencode publish --access public --no-git-checks --provenance
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}

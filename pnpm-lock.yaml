@@ -46,7 +46,7 @@ importers:
         specifier: ^4.3.6
         version: 4.3.6
 
-  packages/opencode-websxa:
+  packages/websxa-opencode:
     dependencies:
       websxa:
         specifier: workspace:*
