@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { builtinProviders, has, version } from '../src/index.ts'
+import { builtinProviders, listProviders, version } from '../src/index.ts'
 
 const packageJsonPath = resolve(dirname(fileURLToPath(import.meta.url)), '../package.json')
 const packageJsonRaw = readFileSync(packageJsonPath, 'utf8')
@@ -18,9 +18,7 @@ describe('webxa', () => {
   })
 
   it('should register built-in providers from main entrypoint', () => {
-    for (const provider of builtinProviders) {
-      expect(has(provider)).toBe(true)
-    }
+    expect(listProviders().map(provider => provider.name)).toEqual(expect.arrayContaining([...builtinProviders]))
   })
 
   it('should mark provider bootstrap files as side effectful for bundlers', () => {
