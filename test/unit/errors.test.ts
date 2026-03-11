@@ -96,6 +96,28 @@ describe('normalizeError', () => {
     expect(error).toBeInstanceOf(WebxaError)
   })
 
+  it('should convert HTTPError 401 to AuthError when provider is known', () => {
+    const error = normalizeError(
+      new HTTPError(401, 'https://example.com', 'Invalid API key'),
+      'exa',
+    )
+    expect(error).toBeInstanceOf(AuthError)
+    if (error instanceof AuthError) {
+      expect(error.provider).toBe('exa')
+      expect(error.message).toContain('Invalid API key')
+    }
+  })
+
+  it('should convert HTTPError 401 to AuthError with unknown provider by default', () => {
+    const error = normalizeError(
+      new HTTPError(401, 'https://example.com', 'Invalid API key'),
+    )
+    expect(error).toBeInstanceOf(AuthError)
+    if (error instanceof AuthError) {
+      expect(error.provider).toBe('unknown')
+    }
+  })
+
   it('should convert object with status 429 to RateLimitError', () => {
     const error = normalizeError({ status: 429, message: 'Too many requests' })
     expect(error).toBeInstanceOf(RateLimitError)
