@@ -4,7 +4,9 @@
   "description": "Unified web search provider for agents and CLI.",
   "type": "module",
   "license": "MIT",
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/providers/*.mjs"
+  ],
   "author": "oritwoen (https://github.com/oritwoen)",
   "repository": {
     "type": "git",
