@@ -6,7 +6,7 @@ permissions:
 on:
   push:
     tags:
-      - 'opencode-v*'
+      - 'websxa-opencode-v*'
 
 jobs:
   release:
@@ -26,7 +26,7 @@ jobs:
       - run: pnpm --filter websxa-opencode build
       - name: Verify tag matches package version
         run: |
-          TAG_VERSION="${GITHUB_REF#refs/tags/opencode-v}"
+          TAG_VERSION="${GITHUB_REF#refs/tags/websxa-opencode-v}"
           PKG_VERSION=$(node -p "require('./packages/websxa-opencode/package.json').version")
           if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
             echo "Tag version ($TAG_VERSION) doesn't match package.json ($PKG_VERSION)"
