@@ -28,8 +28,6 @@ export default defineCommand({
     },
   },
   async run({ args }) {
-    await import('../providers/index.ts')
-
     const { create } = await import('../core/registry.ts')
     const { resolveDefaultProvider } = await import('../core/resolve.ts')
     const { AuthError, UnknownProviderError } = await import('../core/errors.ts')
@@ -37,6 +35,7 @@ export default defineCommand({
 
     try {
       providerName = args.provider || resolveDefaultProvider()
+      await import('../providers/index.ts')
       const provider = create(providerName, {})
       const results = await provider.search(args.query, {
         maxResults: parseInt(args['max-results'], 10),
@@ -83,6 +82,7 @@ export default defineCommand({
         process.exit(1)
       }
       if (error instanceof Error && error.message.includes('No web search provider configured')) {
+        await import('../providers/index.ts')
         const { providers } = await import('../core/registry.ts')
         const available = providers()
         consola.error(error.message)
