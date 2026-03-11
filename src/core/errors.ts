@@ -66,11 +66,26 @@ export class UnknownProviderError extends WebxaError {
   }
 }
 
+/** Thrown when no provider can be selected from env or registry. */
+export class NoProviderConfiguredError extends WebxaError {
+  constructor() {
+    super('No web search provider configured. Set an API key env var or register a provider.')
+    this.name = 'NoProviderConfiguredError'
+  }
+}
+
 /**
  * Convert any caught error into a typed {@link WebxaError} subclass.
  * Maps HTTP status codes to specific error types (401 → AuthError, 429 → RateLimitError).
  */
 export function normalizeError(error: unknown, provider?: string): WebxaError {
+  if (error instanceof HTTPError && error.statusCode === 401) {
+    return new AuthError(
+      `Authentication failed: ${error.body || 'Invalid or missing API key'}`,
+      provider || 'unknown'
+    )
+  }
+
   if (error instanceof WebxaError) {
     return error
   }

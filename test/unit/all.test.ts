@@ -16,6 +16,7 @@ vi.mock('../../src/core/client.ts', () => ({
 }))
 
 import { searchAll } from '../../src/core/all.ts'
+import { UnknownProviderError } from '../../src/core/errors.ts'
 
 import '../../src/providers/index.ts'
 
@@ -164,5 +165,11 @@ describe('searchAll', () => {
     const results = await searchAll('test', { providers: ['searxng'] })
 
     expect(results).toEqual([])
+  })
+
+  it('throws UnknownProviderError for explicit unknown providers', async () => {
+    await expect(
+      searchAll('test', { providers: ['not-real-provider'] }),
+    ).rejects.toThrow(UnknownProviderError)
   })
 })
