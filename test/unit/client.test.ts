@@ -9,7 +9,7 @@ vi.mock('ofetch', () => ({
   FetchError: class FetchError extends Error {
     statusCode: number
     data: unknown
-    response?: { headers: { get: (key: string) => string | null } }
+    response?: Response
 
     constructor(message: string) {
       super(message)
@@ -265,11 +265,9 @@ describe('Client', () => {
       const error = new FetchError('Too many requests')
       error.statusCode = 429
       error.data = null
-      error.response = {
-        headers: {
-          get: (key: string) => (key === 'Retry-After' ? '120' : null),
-        },
-      }
+      error.response = new Response(null, {
+        headers: { 'Retry-After': '120' },
+      })
 
       mockFetch.mockRejectedValueOnce(error)
 
@@ -293,11 +291,7 @@ describe('Client', () => {
       const error = new FetchError('Too many requests')
       error.statusCode = 429
       error.data = null
-      error.response = {
-        headers: {
-          get: () => null,
-        },
-      }
+      error.response = new Response(null)
 
       mockFetch.mockRejectedValueOnce(error)
 
@@ -409,6 +403,31 @@ describe('Client', () => {
         if (err instanceof HTTPError) {
           expect(err.url).not.toContain('abc123')
           expect(err.url).not.toContain('xyz789')
+          expect(err.url).toContain('q=test')
+        }
+      }
+    })
+
+    it('should redact case variants of sensitive params from URL in HTTPError', async () => {
+      const client = new Client()
+
+      const error = new FetchError('Unauthorized')
+      error.statusCode = 401
+      error.data = ''
+
+      mockFetch.mockRejectedValueOnce(error)
+
+      try {
+        await client.getJSON('https://example.com/api?apiKey=abc123&API_KEY=def456&Token=ghi789&q=test', undefined, undefined)
+      }
+      catch (err) {
+        if (err instanceof HTTPError) {
+          expect(err.url).not.toContain('abc123')
+          expect(err.url).not.toContain('def456')
+          expect(err.url).not.toContain('ghi789')
+          expect(err.url).toContain('apiKey=%5BREDACTED%5D')
+          expect(err.url).toContain('API_KEY=%5BREDACTED%5D')
+          expect(err.url).toContain('Token=%5BREDACTED%5D')
           expect(err.url).toContain('q=test')
         }
       }

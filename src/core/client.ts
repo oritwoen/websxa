@@ -95,15 +95,23 @@ export class Client {
 }
 
 const SENSITIVE_PARAMS = ['api_key', 'key', 'token', 'secret', 'password', 'apikey']
+const SENSITIVE_PARAM_SET = new Set(SENSITIVE_PARAMS.map(param => param.toLowerCase()))
 
 function sanitizeUrl(url: string): string {
   try {
     const parsed = new URL(url)
-    for (const param of SENSITIVE_PARAMS) {
-      if (parsed.searchParams.has(param)) {
-        parsed.searchParams.set(param, '[REDACTED]')
+    const redactedParams = new URLSearchParams()
+
+    for (const [key, value] of parsed.searchParams.entries()) {
+      if (SENSITIVE_PARAM_SET.has(key.toLowerCase())) {
+        redactedParams.append(key, '[REDACTED]')
+        continue
       }
+
+      redactedParams.append(key, value)
     }
+
+    parsed.search = redactedParams.toString()
     return parsed.toString()
   }
   catch {
