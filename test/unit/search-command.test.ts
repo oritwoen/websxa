@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { UnknownProviderError } from '../../src/core/errors.ts'
+import { NoProviderConfiguredError, UnknownProviderError } from '../../src/core/errors.ts'
 
 const mockLog = vi.fn()
 const mockInfo = vi.fn()
@@ -36,6 +36,24 @@ vi.mock('../../src/providers/index.ts', () => ({}))
 
 import searchCommand from '../../src/commands/search.ts'
 
+type SearchRunInput = Parameters<NonNullable<typeof searchCommand.run>>[0]
+type SearchRunArgs = SearchRunInput['args']
+
+const defaultArgs: SearchRunArgs = {
+  query: 'test query',
+  provider: undefined,
+  'max-results': '10',
+  json: false,
+}
+
+function makeArgs(overrides: Partial<SearchRunArgs> = {}): SearchRunArgs {
+  return { ...defaultArgs, ...overrides }
+}
+
+function runSearch(overrides: Partial<SearchRunArgs> = {}) {
+  return searchCommand.run!({ args: makeArgs(overrides) })
+}
+
 describe('search command', () => {
   let exitSpy: ReturnType<typeof vi.spyOn>
 
@@ -57,31 +75,24 @@ describe('search command', () => {
   })
 
   it('uses resolved default provider when provider arg is omitted', async () => {
-    await searchCommand.run!({
-      args: {
-        query: 'test query',
-        provider: undefined,
-        'max-results': '10',
-        json: false,
-      },
-    } as never)
+    await runSearch({ provider: undefined })
 
     expect(mockResolveDefaultProvider).toHaveBeenCalledOnce()
     expect(mockCreate).toHaveBeenCalledWith('brave', {})
   })
 
   it('uses explicit provider when provider arg is set', async () => {
-    await searchCommand.run!({
-      args: {
-        query: 'test query',
-        provider: 'exa',
-        'max-results': '10',
-        json: false,
-      },
-    } as never)
+    await runSearch({ provider: 'exa' })
 
     expect(mockResolveDefaultProvider).not.toHaveBeenCalled()
     expect(mockCreate).toHaveBeenCalledWith('exa', {})
+  })
+
+  it('treats empty string provider as omitted', async () => {
+    await runSearch({ provider: '' })
+
+    expect(mockResolveDefaultProvider).toHaveBeenCalledOnce()
+    expect(mockCreate).toHaveBeenCalledWith('brave', {})
   })
 
   it('reports unknown provider using resolved provider name', async () => {
@@ -90,14 +101,7 @@ describe('search command', () => {
     })
 
     await expect(
-      searchCommand.run!({
-        args: {
-          query: 'test query',
-          provider: undefined,
-          'max-results': '10',
-          json: false,
-        },
-      } as never),
+      runSearch({ provider: undefined }),
     ).rejects.toThrow('__EXIT__')
 
     expect(mockError).toHaveBeenCalledWith('Unknown provider: brave')
@@ -106,18 +110,11 @@ describe('search command', () => {
 
   it('shows a helpful message when no provider is configured', async () => {
     mockResolveDefaultProvider.mockImplementationOnce(() => {
-      throw new Error('No web search provider configured. Set an API key env var or register a provider.')
+      throw new NoProviderConfiguredError()
     })
 
     await expect(
-      searchCommand.run!({
-        args: {
-          query: 'test query',
-          provider: undefined,
-          'max-results': '10',
-          json: false,
-        },
-      } as never),
+      runSearch({ provider: undefined }),
     ).rejects.toThrow('__EXIT__')
 
     expect(mockError).toHaveBeenCalledWith(

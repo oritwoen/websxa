@@ -66,6 +66,14 @@ export class UnknownProviderError extends WebxaError {
   }
 }
 
+/** Thrown when no provider can be selected from env or registry. */
+export class NoProviderConfiguredError extends WebxaError {
+  constructor() {
+    super('No web search provider configured. Set an API key env var or register a provider.')
+    this.name = 'NoProviderConfiguredError'
+  }
+}
+
 /**
  * Convert any caught error into a typed {@link WebxaError} subclass.
  * Maps HTTP status codes to specific error types (401 → AuthError, 429 → RateLimitError).

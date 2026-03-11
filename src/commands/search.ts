@@ -30,7 +30,7 @@ export default defineCommand({
   async run({ args }) {
     const { create } = await import('../core/registry.ts')
     const { resolveDefaultProvider } = await import('../core/resolve.ts')
-    const { AuthError, UnknownProviderError } = await import('../core/errors.ts')
+    const { AuthError, UnknownProviderError, NoProviderConfiguredError } = await import('../core/errors.ts')
     let providerName = args.provider
 
     try {
@@ -81,7 +81,7 @@ export default defineCommand({
         }
         process.exit(1)
       }
-      if (error instanceof Error && error.message.includes('No web search provider configured')) {
+      if (error instanceof NoProviderConfiguredError) {
         await import('../providers/index.ts')
         const { providers } = await import('../core/registry.ts')
         const available = providers()
