@@ -1,5 +1,5 @@
 {
-  "name": "opencode-websxa",
+  "name": "websxa-opencode",
   "version": "0.1.2",
   "description": "OpenCode plugin for websxa web search. Temporary standalone package until subpath imports land upstream.",
   "type": "module",
@@ -9,7 +9,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/oritwoen/websxa.git",
-    "directory": "packages/opencode-websxa"
+    "directory": "packages/websxa-opencode"
   },
   "homepage": "https://github.com/oritwoen/websxa#readme",
   "bugs": "https://github.com/oritwoen/websxa/issues",
