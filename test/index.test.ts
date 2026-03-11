@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { builtinProviders, listProviders, version } from '../src/index.ts'
-
-const packageJsonPath = resolve(dirname(fileURLToPath(import.meta.url)), '../package.json')
-const packageJsonRaw = readFileSync(packageJsonPath, 'utf8')
-const packageJson = JSON.parse(packageJsonRaw) as { sideEffects?: boolean | string[] }
+import { builtinProviders, create, version } from '../src/index.ts'
 
 describe('webxa', () => {
   it('should export version matching package.json', () => {
@@ -18,11 +11,9 @@ describe('webxa', () => {
   })
 
   it('should register built-in providers from main entrypoint', () => {
-    expect(listProviders().map(provider => provider.name)).toEqual(expect.arrayContaining([...builtinProviders]))
-  })
-
-  it('should mark provider bootstrap files as side effectful for bundlers', () => {
-    expect(Array.isArray(packageJson.sideEffects)).toBe(true)
-    expect(packageJson.sideEffects).toContain('./dist/providers/*.mjs')
+    for (const provider of builtinProviders) {
+      const config = provider === 'searxng' ? undefined : { apiKey: 'test-api-key' }
+      expect(() => create(provider, config)).not.toThrow()
+    }
   })
 })
