@@ -163,6 +163,8 @@ try {
 
 A 401 from Exa and a 401 from Brave both become `AuthError`. A 429 from any provider becomes `RateLimitError` with a `retryAfter` value. Everything else is `HTTPError` or the base `WebxaError`.
 
+For safety, `HTTPError.url` redacts sensitive query params and URL userinfo credentials before surfacing the URL in error messages.
+
 ## Data model
 
 Every provider returns the same normalized type:
