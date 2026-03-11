@@ -1,3 +1,5 @@
+import './providers/index.ts'
+
 export { version } from './version.ts'
 
 export { builtinProviders, type WebSearchProviderName } from './core/providers.ts'
