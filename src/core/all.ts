@@ -72,14 +72,35 @@ function normalizeUrl(url: string): string {
   try {
     const parsed = new URL(url)
     parsed.hash = ''
-    parsed.searchParams.delete('utm_source')
-    parsed.searchParams.delete('utm_medium')
-    parsed.searchParams.delete('utm_campaign')
-    parsed.searchParams.delete('utm_content')
-    parsed.searchParams.delete('utm_term')
     const path = parsed.pathname.replace(/\/+$/, '') || '/'
-    return `${parsed.protocol}//${parsed.host}${path}${parsed.search}`
+    const search = canonicalizeSearchParams(parsed.searchParams)
+    return `${parsed.protocol}//${parsed.host}${path}${search}`
   } catch {
     return url
   }
+}
+
+function canonicalizeSearchParams(searchParams: URLSearchParams): string {
+  const filteredSortedEntries = Array.from(searchParams.entries())
+    .filter(([key]) => !isTrackingParam(key))
+    .map(([key, value], index) => ({ key, value, index }))
+    .sort((a, b) => {
+      const keyOrder = a.key.localeCompare(b.key, 'en')
+      if (keyOrder !== 0) {
+        return keyOrder
+      }
+
+      return a.index - b.index
+    })
+    .map(({ key, value }): [string, string] => [key, value])
+
+  if (filteredSortedEntries.length === 0) {
+    return ''
+  }
+
+  return `?${new URLSearchParams(filteredSortedEntries).toString()}`
+}
+
+function isTrackingParam(key: string): boolean {
+  return key.toLowerCase().startsWith('utm_')
 }
