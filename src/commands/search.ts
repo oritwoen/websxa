@@ -34,11 +34,17 @@ export default defineCommand({
     let providerName = args.provider
 
     try {
+      const maxResults = parseMaxResults(args['max-results'])
+      if (!maxResults.ok) {
+        consola.error(maxResults.message)
+        process.exit(1)
+      }
+
       providerName = args.provider || resolveDefaultProvider()
       await import('../providers/index.ts')
       const provider = create(providerName, {})
       const results = await provider.search(args.query, {
-        maxResults: parseInt(args['max-results'], 10),
+        maxResults: maxResults.value,
       })
 
       if (args.json) {
@@ -96,3 +102,26 @@ export default defineCommand({
     }
   },
 })
+
+type ParsedMaxResults =
+  | { ok: true; value: number }
+  | { ok: false; message: string }
+
+function parseMaxResults(input: string): ParsedMaxResults {
+  if (!/^\d+$/.test(input)) {
+    return {
+      ok: false,
+      message: 'Invalid --max-results value. Expected a positive integer.',
+    }
+  }
+
+  const value = Number.parseInt(input, 10)
+  if (value < 1) {
+    return {
+      ok: false,
+      message: 'Invalid --max-results value. Expected a positive integer.',
+    }
+  }
+
+  return { ok: true, value }
+}
