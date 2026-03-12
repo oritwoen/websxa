@@ -83,12 +83,16 @@ function normalizeUrl(url: string): string {
 function canonicalizeSearchParams(searchParams: URLSearchParams): string {
   const filteredSortedEntries = Array.from(searchParams.entries())
     .filter(([key]) => !isTrackingParam(key))
-    .sort(([aKey, aValue], [bKey, bValue]) => {
-      if (aKey === bKey) {
-        return aValue.localeCompare(bValue)
+    .map(([key, value], index) => ({ key, value, index }))
+    .sort((a, b) => {
+      const keyOrder = a.key.localeCompare(b.key)
+      if (keyOrder !== 0) {
+        return keyOrder
       }
-      return aKey.localeCompare(bKey)
+
+      return a.index - b.index
     })
+    .map(({ key, value }): [string, string] => [key, value])
 
   if (filteredSortedEntries.length === 0) {
     return ''

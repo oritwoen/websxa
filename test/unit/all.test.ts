@@ -227,6 +227,107 @@ describe('searchAll', () => {
     expect(results[0].provider).toBe('exa')
   })
 
+  it('does not deduplicate URLs when duplicate-key value order differs', async () => {
+    process.env.EXA_API_KEY = 'test-exa'
+    process.env.BRAVE_API_KEY = 'test-brave'
+
+    mockPostJSON.mockResolvedValue({
+      requestId: 'test-req',
+      results: [{
+        id: '1',
+        url: 'https://example.com/page?tag=a&tag=b',
+        title: 'Ordered tags A then B',
+        score: 0.8,
+        text: 'text',
+        highlights: ['hl'],
+      }],
+    })
+
+    mockGetJSON.mockResolvedValue({
+      web: {
+        results: [{
+          url: 'https://example.com/page?tag=b&tag=a',
+          title: 'Ordered tags B then A',
+          description: 'desc',
+          extra_snippets: [],
+          meta_url: { favicon: '' },
+        }],
+      },
+    })
+
+    const results = await searchAll('test', { providers: ['exa', 'brave'] })
+
+    expect(results).toHaveLength(2)
+  })
+
+  it('keeps first provider result when duplicate URLs have equal scores', async () => {
+    process.env.EXA_API_KEY = 'test-exa'
+    process.env.BRAVE_API_KEY = 'test-brave'
+
+    mockPostJSON.mockResolvedValue({
+      requestId: 'test-req',
+      results: [{
+        id: '1',
+        url: 'https://example.com/page?b=2&a=1',
+        title: 'Exa result',
+        score: 0.7,
+        text: 'text',
+        highlights: ['hl'],
+      }],
+    })
+
+    mockGetJSON.mockResolvedValue({
+      web: {
+        results: [{
+          url: 'https://example.com/page?a=1&b=2',
+          title: 'Brave result',
+          description: 'desc',
+          extra_snippets: [],
+          meta_url: { favicon: '' },
+        }],
+      },
+    })
+
+    const results = await searchAll('test', { providers: ['exa', 'brave'] })
+
+    expect(results).toHaveLength(1)
+    expect(results[0].provider).toBe('exa')
+    expect(results[0].score).toBe(0.7)
+  })
+
+  it('keeps first provider result when duplicate URLs have no scores', async () => {
+    process.env.EXA_API_KEY = 'test-exa'
+    process.env.BRAVE_API_KEY = 'test-brave'
+
+    mockPostJSON.mockResolvedValue({
+      requestId: 'test-req',
+      results: [{
+        id: '1',
+        url: 'https://example.com/page?b=2&a=1',
+        title: 'Exa no score',
+        text: 'text',
+        highlights: ['hl'],
+      }],
+    })
+
+    mockGetJSON.mockResolvedValue({
+      web: {
+        results: [{
+          url: 'https://example.com/page?a=1&b=2',
+          title: 'Brave no score',
+          description: 'desc',
+          extra_snippets: [],
+          meta_url: { favicon: '' },
+        }],
+      },
+    })
+
+    const results = await searchAll('test', { providers: ['exa', 'brave'] })
+
+    expect(results).toHaveLength(1)
+    expect(results[0].provider).toBe('exa')
+  })
+
   it('returns empty array when all providers fail', async () => {
     mockGetJSON.mockRejectedValue(new Error('searxng down'))
 
