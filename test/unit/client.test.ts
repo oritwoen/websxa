@@ -9,7 +9,7 @@ vi.mock('ofetch', () => ({
   FetchError: class FetchError extends Error {
     statusCode: number
     data: unknown
-    response?: { headers: { get: (key: string) => string | null } }
+    response?: Response
 
     constructor(message: string) {
       super(message)
@@ -20,7 +20,7 @@ vi.mock('ofetch', () => ({
   },
 }))
 
-import { Client, defaultClient } from '../../src/core/client.ts'
+import { Client, defaultClient, resetDefaultClientForTests } from '../../src/core/client.ts'
 import { HTTPError, RateLimitError } from '../../src/core/errors.ts'
 import { version } from '../../src/version.ts'
 import { FetchError } from 'ofetch'
@@ -32,8 +32,7 @@ describe('Client', () => {
   })
 
   afterEach(() => {
-    // Reset the default client singleton for isolation
-    ;(globalThis as any)._defaultClient = undefined
+    resetDefaultClientForTests()
   })
 
   describe('constructor', () => {
@@ -265,11 +264,9 @@ describe('Client', () => {
       const error = new FetchError('Too many requests')
       error.statusCode = 429
       error.data = null
-      error.response = {
-        headers: {
-          get: (key: string) => (key === 'Retry-After' ? '120' : null),
-        },
-      }
+      error.response = new Response(null, {
+        headers: { 'Retry-After': '120' },
+      })
 
       mockFetch.mockRejectedValueOnce(error)
 
@@ -293,11 +290,7 @@ describe('Client', () => {
       const error = new FetchError('Too many requests')
       error.statusCode = 429
       error.data = null
-      error.response = {
-        headers: {
-          get: () => null,
-        },
-      }
+      error.response = new Response(null)
 
       mockFetch.mockRejectedValueOnce(error)
 
@@ -414,6 +407,134 @@ describe('Client', () => {
       }
     })
 
+    it('should redact case variants of sensitive params from URL in HTTPError', async () => {
+      const client = new Client()
+
+      const error = new FetchError('Unauthorized')
+      error.statusCode = 401
+      error.data = ''
+
+      mockFetch.mockRejectedValueOnce(error)
+
+      try {
+        await client.getJSON('https://example.com/api?apiKey=abc123&API_KEY=def456&Token=ghi789&q=test', undefined, undefined)
+        throw new Error('Expected HTTPError')
+      }
+      catch (err) {
+        expect(err).toBeInstanceOf(HTTPError)
+        if (!(err instanceof HTTPError)) {
+          throw err
+        }
+        expect(err.url).not.toContain('abc123')
+        expect(err.url).not.toContain('def456')
+        expect(err.url).not.toContain('ghi789')
+        expect(err.url).toContain('apiKey=%5BREDACTED%5D')
+        expect(err.url).toContain('API_KEY=%5BREDACTED%5D')
+        expect(err.url).toContain('Token=%5BREDACTED%5D')
+        expect(err.url).toContain('q=test')
+      }
+    })
+
+    it('should redact repeated mixed-case sensitive params from URL in HTTPError', async () => {
+      const client = new Client()
+
+      const error = new FetchError('Unauthorized')
+      error.statusCode = 401
+      error.data = ''
+
+      mockFetch.mockRejectedValueOnce(error)
+
+      try {
+        await client.getJSON('https://example.com/api?Token=a&token=b&TOKEN=c&q=test', undefined, undefined)
+        throw new Error('Expected HTTPError')
+      }
+      catch (err) {
+        expect(err).toBeInstanceOf(HTTPError)
+        if (!(err instanceof HTTPError)) {
+          throw err
+        }
+        expect(err.url).not.toContain('Token=a')
+        expect(err.url).not.toContain('token=b')
+        expect(err.url).not.toContain('TOKEN=c')
+        expect(err.url).toContain('Token=%5BREDACTED%5D')
+        expect(err.url).toContain('token=%5BREDACTED%5D')
+        expect(err.url).toContain('TOKEN=%5BREDACTED%5D')
+        expect(err.url).toContain('q=test')
+      }
+    })
+
+    it('should preserve non-sensitive query encoding when redacting secrets', async () => {
+      const client = new Client()
+
+      const error = new FetchError('Unauthorized')
+      error.statusCode = 401
+      error.data = ''
+
+      mockFetch.mockRejectedValueOnce(error)
+
+      try {
+        await client.getJSON('https://example.com/api?api_key=abc123&q=hello%20world', undefined, undefined)
+        throw new Error('Expected HTTPError')
+      }
+      catch (err) {
+        expect(err).toBeInstanceOf(HTTPError)
+        if (!(err instanceof HTTPError)) {
+          throw err
+        }
+        expect(err.url).toContain('api_key=%5BREDACTED%5D')
+        expect(err.url).toContain('q=hello%20world')
+      }
+    })
+
+    it('should preserve flag params and redact sensitive params with explicit values', async () => {
+      const client = new Client()
+
+      const error = new FetchError('Unauthorized')
+      error.statusCode = 401
+      error.data = ''
+
+      mockFetch.mockRejectedValueOnce(error)
+
+      try {
+        await client.getJSON('https://example.com/api?api_key&token=&q=test', undefined, undefined)
+        throw new Error('Expected HTTPError')
+      }
+      catch (err) {
+        expect(err).toBeInstanceOf(HTTPError)
+        if (!(err instanceof HTTPError)) {
+          throw err
+        }
+        expect(err.url).toContain('api_key')
+        expect(err.url).not.toContain('api_key=%5BREDACTED%5D')
+        expect(err.url).toContain('token=%5BREDACTED%5D')
+        expect(err.url).toContain('q=test')
+      }
+    })
+
+    it('should redact userinfo credentials from URL in HTTPError', async () => {
+      const client = new Client()
+
+      const error = new FetchError('Unauthorized')
+      error.statusCode = 401
+      error.data = ''
+
+      mockFetch.mockRejectedValueOnce(error)
+
+      try {
+        await client.getJSON('https://user:password@example.com/api?key=abc123', undefined, undefined)
+        throw new Error('Expected HTTPError')
+      }
+      catch (err) {
+        expect(err).toBeInstanceOf(HTTPError)
+        if (!(err instanceof HTTPError)) {
+          throw err
+        }
+        expect(err.url).not.toContain('user:password@')
+        expect(err.url).toContain('https://[REDACTED]:[REDACTED]@example.com')
+        expect(err.url).toContain('key=%5BREDACTED%5D')
+      }
+    })
+
     it('should leave URL unchanged when no sensitive params present', async () => {
       const client = new Client()
 
@@ -425,11 +546,38 @@ describe('Client', () => {
 
       try {
         await client.getJSON('https://api.example.com/search?q=hello&count=10', undefined, undefined)
+        throw new Error('Expected HTTPError')
       }
       catch (err) {
-        if (err instanceof HTTPError) {
-          expect(err.url).toBe('https://api.example.com/search?q=hello&count=10')
+        expect(err).toBeInstanceOf(HTTPError)
+        if (!(err instanceof HTTPError)) {
+          throw err
         }
+        expect(err.url).toBe('https://api.example.com/search?q=hello&count=10')
+      }
+    })
+
+    it('should preserve original URL string when no sensitive params are present', async () => {
+      const client = new Client()
+
+      const error = new FetchError('Not found')
+      error.statusCode = 404
+      error.data = ''
+
+      mockFetch.mockRejectedValueOnce(error)
+
+      const originalUrl = 'https://api.example.com/search?q=hello%20world&x=~tilde'
+
+      try {
+        await client.getJSON(originalUrl, undefined, undefined)
+        throw new Error('Expected HTTPError')
+      }
+      catch (err) {
+        expect(err).toBeInstanceOf(HTTPError)
+        if (!(err instanceof HTTPError)) {
+          throw err
+        }
+        expect(err.url).toBe(originalUrl)
       }
     })
 
