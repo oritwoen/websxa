@@ -37,11 +37,18 @@ vi.mock('../../src/providers/index.ts', () => ({}))
 import searchCommand from '../../src/commands/search.ts'
 
 type SearchRunInput = Parameters<NonNullable<typeof searchCommand.run>>[0]
-type SearchRunArgs = SearchRunInput['args']
+type SearchRunArgs = {
+  _: string[]
+  query: string
+  provider?: string
+  'max-results': string
+  json: boolean
+  [key: string]: string | number | boolean | string[] | undefined
+}
 
 const defaultArgs: SearchRunArgs = {
+  _: [],
   query: 'test query',
-  provider: undefined,
   'max-results': '10',
   json: false,
 }
@@ -51,7 +58,12 @@ function makeArgs(overrides: Partial<SearchRunArgs> = {}): SearchRunArgs {
 }
 
 function runSearch(overrides: Partial<SearchRunArgs> = {}) {
-  return searchCommand.run!({ args: makeArgs(overrides) })
+  const context = {
+    args: makeArgs(overrides),
+    rawArgs: [],
+    cmd: searchCommand,
+  } as SearchRunInput
+  return searchCommand.run!(context)
 }
 
 describe('search command', () => {
@@ -93,6 +105,36 @@ describe('search command', () => {
 
     expect(mockResolveDefaultProvider).toHaveBeenCalledOnce()
     expect(mockCreate).toHaveBeenCalledWith('brave', {})
+  })
+
+  it('exits with a helpful message for non-numeric --max-results', async () => {
+    await expect(
+      runSearch({ 'max-results': 'abc' }),
+    ).rejects.toThrow('__EXIT__')
+
+    expect(mockError).toHaveBeenCalledWith('Invalid --max-results value. Expected a positive integer.')
+    expect(mockSearch).not.toHaveBeenCalled()
+    expect(exitSpy).toHaveBeenCalledWith(1)
+  })
+
+  it('exits with a helpful message for zero --max-results', async () => {
+    await expect(
+      runSearch({ 'max-results': '0' }),
+    ).rejects.toThrow('__EXIT__')
+
+    expect(mockError).toHaveBeenCalledWith('Invalid --max-results value. Expected a positive integer.')
+    expect(mockSearch).not.toHaveBeenCalled()
+    expect(exitSpy).toHaveBeenCalledWith(1)
+  })
+
+  it('exits with a helpful message for negative --max-results', async () => {
+    await expect(
+      runSearch({ 'max-results': '-1' }),
+    ).rejects.toThrow('__EXIT__')
+
+    expect(mockError).toHaveBeenCalledWith('Invalid --max-results value. Expected a positive integer.')
+    expect(mockSearch).not.toHaveBeenCalled()
+    expect(exitSpy).toHaveBeenCalledWith(1)
   })
 
   it('reports unknown provider using resolved provider name', async () => {
