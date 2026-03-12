@@ -260,7 +260,7 @@ describe('searchAll', () => {
     expect(results).toHaveLength(2)
   })
 
-  it('keeps first provider result when duplicate URLs have equal scores', async () => {
+  it('keeps scored result over unscored duplicate', async () => {
     process.env.EXA_API_KEY = 'test-exa'
     process.env.BRAVE_API_KEY = 'test-brave'
 

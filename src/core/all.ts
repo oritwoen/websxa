@@ -85,7 +85,7 @@ function canonicalizeSearchParams(searchParams: URLSearchParams): string {
     .filter(([key]) => !isTrackingParam(key))
     .map(([key, value], index) => ({ key, value, index }))
     .sort((a, b) => {
-      const keyOrder = a.key.localeCompare(b.key)
+      const keyOrder = a.key.localeCompare(b.key, 'en')
       if (keyOrder !== 0) {
         return keyOrder
       }
