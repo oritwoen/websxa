@@ -159,6 +159,74 @@ describe('searchAll', () => {
     expect(results).toHaveLength(1)
   })
 
+  it('deduplicates URLs when query parameter order differs', async () => {
+    process.env.EXA_API_KEY = 'test-exa'
+    process.env.BRAVE_API_KEY = 'test-brave'
+
+    mockPostJSON.mockResolvedValue({
+      requestId: 'test-req',
+      results: [{
+        id: '1',
+        url: 'https://example.com/page?a=1&b=2',
+        title: 'Ordered A then B',
+        score: 0.8,
+        text: 'text',
+        highlights: ['hl'],
+      }],
+    })
+
+    mockGetJSON.mockResolvedValue({
+      web: {
+        results: [{
+          url: 'https://example.com/page?b=2&a=1',
+          title: 'Ordered B then A',
+          description: 'desc',
+          extra_snippets: [],
+          meta_url: { favicon: '' },
+        }],
+      },
+    })
+
+    const results = await searchAll('test', { providers: ['exa', 'brave'] })
+
+    expect(results).toHaveLength(1)
+    expect(results[0].provider).toBe('exa')
+  })
+
+  it('ignores all utm_* params regardless of suffix or case', async () => {
+    process.env.EXA_API_KEY = 'test-exa'
+    process.env.BRAVE_API_KEY = 'test-brave'
+
+    mockPostJSON.mockResolvedValue({
+      requestId: 'test-req',
+      results: [{
+        id: '1',
+        url: 'https://example.com/page?a=1&utm_id=xyz&utm_source=newsletter',
+        title: 'Exa with tracking params',
+        score: 0.9,
+        text: 'text',
+        highlights: ['hl'],
+      }],
+    })
+
+    mockGetJSON.mockResolvedValue({
+      web: {
+        results: [{
+          url: 'https://example.com/page?a=1&UTM_MEDIUM=email',
+          title: 'Brave with tracking params',
+          description: 'desc',
+          extra_snippets: [],
+          meta_url: { favicon: '' },
+        }],
+      },
+    })
+
+    const results = await searchAll('test', { providers: ['exa', 'brave'] })
+
+    expect(results).toHaveLength(1)
+    expect(results[0].provider).toBe('exa')
+  })
+
   it('returns empty array when all providers fail', async () => {
     mockGetJSON.mockRejectedValue(new Error('searxng down'))
 
