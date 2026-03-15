@@ -77,9 +77,8 @@ export class Client {
   private mapError(error: unknown, url: string): Error {
     if (error instanceof FetchError) {
       if (error.statusCode === 429) {
-        const retryAfter = Number.parseInt(
-          error.response?.headers.get('Retry-After') ?? '60',
-          10,
+        const retryAfter = parseRetryAfter(
+          error.response?.headers.get('Retry-After'),
         )
         throw new RateLimitError(retryAfter)
       }
@@ -232,4 +231,19 @@ export function defaultClient(): Client {
 
 export function resetDefaultClientForTests(): void {
   _defaultClient = undefined
+}
+
+const DEFAULT_RETRY_AFTER = 60
+
+export function parseRetryAfter(header: string | null | undefined): number {
+  if (header == null) {
+    return DEFAULT_RETRY_AFTER
+  }
+
+  const parsed = Number.parseInt(header, 10)
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return DEFAULT_RETRY_AFTER
+  }
+
+  return parsed
 }

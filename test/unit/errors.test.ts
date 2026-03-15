@@ -124,6 +124,42 @@ describe('normalizeError', () => {
     expect(error).toBeInstanceOf(WebxaError)
   })
 
+  it('should use numeric Retry-After header for 429 when available', () => {
+    const error = normalizeError({
+      status: 429,
+      message: 'Too many requests',
+      response: { headers: { get: () => '120' } },
+    })
+    expect(error).toBeInstanceOf(RateLimitError)
+    if (error instanceof RateLimitError) {
+      expect(error.retryAfter).toBe(120)
+    }
+  })
+
+  it('should fall back to 60 for non-numeric Retry-After header on 429', () => {
+    const error = normalizeError({
+      status: 429,
+      message: 'Too many requests',
+      response: { headers: { get: () => 'soon' } },
+    })
+    expect(error).toBeInstanceOf(RateLimitError)
+    if (error instanceof RateLimitError) {
+      expect(error.retryAfter).toBe(60)
+    }
+  })
+
+  it('should fall back to 60 for negative Retry-After header on 429', () => {
+    const error = normalizeError({
+      status: 429,
+      message: 'Too many requests',
+      response: { headers: { get: () => '-5' } },
+    })
+    expect(error).toBeInstanceOf(RateLimitError)
+    if (error instanceof RateLimitError) {
+      expect(error.retryAfter).toBe(60)
+    }
+  })
+
   it('should convert object with status 500+ to HTTPError', () => {
     const error = normalizeError({ status: 500, message: 'Server error' })
     expect(error).toBeInstanceOf(HTTPError)

@@ -109,10 +109,8 @@ export function normalizeError(error: unknown, provider?: string): WebxaError {
       case 404:
         return new HTTPError(404, '', message)
       case 429: {
-        const retryAfter = fetchError.response?.headers?.get('Retry-After')
-        return new RateLimitError(
-          retryAfter ? parseInt(retryAfter, 10) : 60
-        )
+        const retryAfter = parseRetryAfterHeader(fetchError.response?.headers?.get('Retry-After'))
+        return new RateLimitError(retryAfter)
       }
       default:
         if (status >= 500) {
@@ -127,4 +125,19 @@ export function normalizeError(error: unknown, provider?: string): WebxaError {
   }
 
   return new WebxaError(String(error))
+}
+
+const DEFAULT_RETRY_AFTER = 60
+
+function parseRetryAfterHeader(header: string | null | undefined): number {
+  if (header == null) {
+    return DEFAULT_RETRY_AFTER
+  }
+
+  const parsed = Number.parseInt(header, 10)
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return DEFAULT_RETRY_AFTER
+  }
+
+  return parsed
 }
