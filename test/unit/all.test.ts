@@ -16,7 +16,7 @@ vi.mock('../../src/core/client.ts', () => ({
 }))
 
 import { searchAll, searchAllDetailed } from '../../src/core/all.ts'
-import { UnknownProviderError } from '../../src/core/errors.ts'
+import { UnknownProviderError, NoProviderConfiguredError } from '../../src/core/errors.ts'
 
 import '../../src/providers/index.ts'
 
@@ -340,6 +340,12 @@ describe('searchAll', () => {
     await expect(
       searchAll('test', { providers: ['not-real-provider'] }),
     ).rejects.toThrow(UnknownProviderError)
+  })
+
+  it('throws NoProviderConfiguredError when explicit providers list is empty', async () => {
+    await expect(
+      searchAll('test', { providers: [] }),
+    ).rejects.toThrow(NoProviderConfiguredError)
   })
 })
 

@@ -1,5 +1,5 @@
 import type { SearchResult, SearchOptions } from './types.ts'
-import { UnknownProviderError } from './errors.ts'
+import { UnknownProviderError, NoProviderConfiguredError } from './errors.ts'
 import { create, has } from './registry.ts'
 import { detectAvailableProviders } from './resolve.ts'
 
@@ -46,6 +46,10 @@ export async function searchAllDetailed(query: string, options?: SearchAllOption
   }
 
   const providerNames = providerList ?? detectAvailableProviders()
+
+  if (providerNames.length === 0) {
+    throw new NoProviderConfiguredError()
+  }
 
   const settled = await Promise.allSettled(
     providerNames.map(async (name) => {
