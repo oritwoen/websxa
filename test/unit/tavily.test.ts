@@ -137,6 +137,22 @@ describe('tavily provider', () => {
       expect(body.max_results).toBe(5)
     })
 
+    it('passes includeDomains to include_domains in body', async () => {
+      const provider = create('tavily', { apiKey: 'test-key' })
+      await provider.search('test query', { includeDomains: ['github.com', 'stackoverflow.com'] })
+
+      const [, body] = mockPostJSON.mock.calls[0]
+      expect(body.include_domains).toEqual(['github.com', 'stackoverflow.com'])
+    })
+
+    it('passes excludeDomains to exclude_domains in body', async () => {
+      const provider = create('tavily', { apiKey: 'test-key' })
+      await provider.search('test query', { excludeDomains: ['reddit.com'] })
+
+      const [, body] = mockPostJSON.mock.calls[0]
+      expect(body.exclude_domains).toEqual(['reddit.com'])
+    })
+
     it('returns empty array for empty results', async () => {
       mockPostJSON.mockResolvedValueOnce({
         results: [],
