@@ -304,6 +304,50 @@ describe('Client', () => {
       }
     })
 
+    it('should fall back to 60 for non-numeric Retry-After header', async () => {
+      expect.assertions(2)
+      const client = new Client()
+
+      const error = new FetchError('Too many requests')
+      error.statusCode = 429
+      error.data = null
+      error.response = new Response(null, { headers: { 'Retry-After': 'soon' } })
+
+      mockFetch.mockRejectedValueOnce(error)
+
+      try {
+        await client.getJSON('https://api.example.com/data', undefined, undefined)
+      }
+      catch (err) {
+        expect(err).toBeInstanceOf(RateLimitError)
+        if (err instanceof RateLimitError) {
+          expect(err.retryAfter).toBe(60)
+        }
+      }
+    })
+
+    it('should fall back to 60 for negative Retry-After header', async () => {
+      expect.assertions(2)
+      const client = new Client()
+
+      const error = new FetchError('Too many requests')
+      error.statusCode = 429
+      error.data = null
+      error.response = new Response(null, { headers: { 'Retry-After': '-10' } })
+
+      mockFetch.mockRejectedValueOnce(error)
+
+      try {
+        await client.getJSON('https://api.example.com/data', undefined, undefined)
+      }
+      catch (err) {
+        expect(err).toBeInstanceOf(RateLimitError)
+        if (err instanceof RateLimitError) {
+          expect(err.retryAfter).toBe(60)
+        }
+      }
+    })
+
     it('should map FetchError with other statusCode to HTTPError', async () => {
       const client = new Client()
 
@@ -629,3 +673,4 @@ describe('Client', () => {
     })
   })
 })
+

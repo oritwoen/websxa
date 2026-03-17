@@ -152,6 +152,61 @@ describe('searchTool', () => {
     expect(body.numResults).toBe(5)
   })
 
+  it('passes includeDomains to provider', async () => {
+    process.env.EXA_API_KEY = 'test-exa-key'
+    mockPostJSON.mockResolvedValue(exaResponse)
+
+    await searchTool.execute!(
+      { query: 'test', provider: 'exa', includeDomains: ['github.com'] },
+      { toolCallId: 'call-domains', messages: [] },
+    )
+
+    const [, body] = mockPostJSON.mock.calls[0]
+    expect(body.includeDomains).toEqual(['github.com'])
+  })
+
+  it('passes excludeDomains to provider', async () => {
+    process.env.EXA_API_KEY = 'test-exa-key'
+    mockPostJSON.mockResolvedValue(exaResponse)
+
+    await searchTool.execute!(
+      { query: 'test', provider: 'exa', excludeDomains: ['reddit.com'] },
+      { toolCallId: 'call-exclude', messages: [] },
+    )
+
+    const [, body] = mockPostJSON.mock.calls[0]
+    expect(body.excludeDomains).toEqual(['reddit.com'])
+  })
+
+  it('passes date filters to provider', async () => {
+    process.env.EXA_API_KEY = 'test-exa-key'
+    mockPostJSON.mockResolvedValue(exaResponse)
+
+    await searchTool.execute!(
+      { query: 'test', provider: 'exa', startPublishedDate: '2024-01-01', endPublishedDate: '2024-12-31' },
+      { toolCallId: 'call-dates', messages: [] },
+    )
+
+    const [, body] = mockPostJSON.mock.calls[0]
+    expect(body.startPublishedDate).toBe('2024-01-01')
+    expect(body.endPublishedDate).toBe('2024-12-31')
+  })
+
+  it('passes filters through to searchAll with "all" provider', async () => {
+    process.env.EXA_API_KEY = 'test-exa-key'
+    mockPostJSON.mockResolvedValue(exaResponse)
+
+    const results = await searchTool.execute!(
+      { query: 'test', provider: 'all', includeDomains: ['github.com'], maxResults: 5 },
+      { toolCallId: 'call-all-filters', messages: [] },
+    )
+
+    expect(Array.isArray(results)).toBe(true)
+    const [, body] = mockPostJSON.mock.calls[0]
+    expect(body.includeDomains).toEqual(['github.com'])
+    expect(body.numResults).toBe(5)
+  })
+
   it('execute with all provider queries all available providers', async () => {
     process.env.EXA_API_KEY = 'test-exa-key'
     process.env.BRAVE_API_KEY = 'test-brave-key'

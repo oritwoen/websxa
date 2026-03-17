@@ -1,7 +1,7 @@
 import { ofetch, FetchError } from 'ofetch'
 import type { $Fetch } from 'ofetch'
 import type { ClientOptions } from './types.ts'
-import { HTTPError, RateLimitError } from './errors.ts'
+import { HTTPError, RateLimitError, parseRetryAfter } from './errors.ts'
 import { version } from '../version.ts'
 
 const DEFAULT_MAX_RETRIES = 5
@@ -77,9 +77,8 @@ export class Client {
   private mapError(error: unknown, url: string): Error {
     if (error instanceof FetchError) {
       if (error.statusCode === 429) {
-        const retryAfter = Number.parseInt(
-          error.response?.headers.get('Retry-After') ?? '60',
-          10,
+        const retryAfter = parseRetryAfter(
+          error.response?.headers.get('Retry-After'),
         )
         throw new RateLimitError(retryAfter)
       }
@@ -233,3 +232,4 @@ export function defaultClient(): Client {
 export function resetDefaultClientForTests(): void {
   _defaultClient = undefined
 }
+

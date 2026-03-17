@@ -15,7 +15,7 @@ vi.mock('../../src/core/client.ts', () => ({
   })),
 }))
 
-import { searchAll } from '../../src/core/all.ts'
+import { searchAll, searchAllDetailed } from '../../src/core/all.ts'
 import { UnknownProviderError } from '../../src/core/errors.ts'
 
 import '../../src/providers/index.ts'
@@ -340,5 +340,62 @@ describe('searchAll', () => {
     await expect(
       searchAll('test', { providers: ['not-real-provider'] }),
     ).rejects.toThrow(UnknownProviderError)
+  })
+})
+
+describe('searchAllDetailed', () => {
+  beforeEach(() => {
+    mockPostJSON.mockReset()
+    mockGetJSON.mockReset()
+    delete process.env.EXA_API_KEY
+    delete process.env.BRAVE_API_KEY
+    delete process.env.TAVILY_API_KEY
+    delete process.env.SERPAPI_API_KEY
+  })
+
+  it('returns results and empty errors when all providers succeed', async () => {
+    process.env.EXA_API_KEY = 'test-exa'
+    mockPostJSON.mockResolvedValue(exaResponse)
+
+    const response = await searchAllDetailed('test', { providers: ['exa'] })
+
+    expect(response.results).toHaveLength(1)
+    expect(response.errors).toHaveLength(0)
+  })
+
+  it('reports failed providers in errors array', async () => {
+    process.env.EXA_API_KEY = 'test-exa'
+    process.env.BRAVE_API_KEY = 'test-brave'
+
+    mockPostJSON.mockRejectedValue(new Error('exa auth failed'))
+    mockGetJSON.mockResolvedValue(braveResponse)
+
+    const response = await searchAllDetailed('test', { providers: ['exa', 'brave'] })
+
+    expect(response.results).toHaveLength(1)
+    expect(response.results[0].provider).toBe('brave')
+    expect(response.errors).toHaveLength(1)
+    expect(response.errors[0].provider).toBe('exa')
+    expect(response.errors[0].error.message).toBe('exa auth failed')
+  })
+
+  it('reports all providers as errors when all fail', async () => {
+    mockGetJSON.mockRejectedValue(new Error('searxng down'))
+
+    const response = await searchAllDetailed('test', { providers: ['searxng'] })
+
+    expect(response.results).toHaveLength(0)
+    expect(response.errors).toHaveLength(1)
+    expect(response.errors[0].provider).toBe('searxng')
+  })
+
+  it('wraps non-Error rejections in Error objects', async () => {
+    mockGetJSON.mockRejectedValue('string rejection')
+
+    const response = await searchAllDetailed('test', { providers: ['searxng'] })
+
+    expect(response.errors).toHaveLength(1)
+    expect(response.errors[0].error).toBeInstanceOf(Error)
+    expect(response.errors[0].error.message).toBe('string rejection')
   })
 })

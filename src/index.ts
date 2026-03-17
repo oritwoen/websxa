@@ -12,8 +12,8 @@ export { Client, defaultClient } from './core/client.ts'
 
 export { register, create, providers, has } from './core/registry.ts'
 
-export { searchAll } from './core/all.ts'
-export type { SearchAllOptions, SearchAllResult } from './core/all.ts'
+export { searchAll, searchAllDetailed } from './core/all.ts'
+export type { SearchAllOptions, SearchAllResult, SearchAllResponse, ProviderError } from './core/all.ts'
 
 export { resolveDefaultProvider, detectAvailableProviders, listProviders } from './core/resolve.ts'
 export type { ProviderStatus } from './core/resolve.ts'
