@@ -6,6 +6,7 @@ import {
   RateLimitError,
   UnknownProviderError,
   normalizeError,
+  parseRetryAfter,
 } from '../../src/core/errors.ts'
 
 describe('WebxaError', () => {
@@ -124,6 +125,65 @@ describe('normalizeError', () => {
     expect(error).toBeInstanceOf(WebxaError)
   })
 
+  it('should use numeric Retry-After header for 429 when available', () => {
+    const error = normalizeError({
+      status: 429,
+      message: 'Too many requests',
+      response: { headers: { get: () => '120' } },
+    })
+    expect(error).toBeInstanceOf(RateLimitError)
+    if (error instanceof RateLimitError) {
+      expect(error.retryAfter).toBe(120)
+    }
+  })
+
+  it('should fall back to 60 for non-numeric Retry-After header on 429', () => {
+    const error = normalizeError({
+      status: 429,
+      message: 'Too many requests',
+      response: { headers: { get: () => 'soon' } },
+    })
+    expect(error).toBeInstanceOf(RateLimitError)
+    if (error instanceof RateLimitError) {
+      expect(error.retryAfter).toBe(60)
+    }
+  })
+
+  it('should fall back to 60 for negative Retry-After header on 429', () => {
+    const error = normalizeError({
+      status: 429,
+      message: 'Too many requests',
+      response: { headers: { get: () => '-5' } },
+    })
+    expect(error).toBeInstanceOf(RateLimitError)
+    if (error instanceof RateLimitError) {
+      expect(error.retryAfter).toBe(60)
+    }
+  })
+
+  it('should return 0 for zero Retry-After header on 429', () => {
+    const error = normalizeError({
+      status: 429,
+      message: 'Too many requests',
+      response: { headers: { get: () => '0' } },
+    })
+    expect(error).toBeInstanceOf(RateLimitError)
+    if (error instanceof RateLimitError) {
+      expect(error.retryAfter).toBe(0)
+    }
+  })
+
+  it('should fall back to 60 when response has no headers on 429', () => {
+    const error = normalizeError({
+      status: 429,
+      message: 'Too many requests',
+    })
+    expect(error).toBeInstanceOf(RateLimitError)
+    if (error instanceof RateLimitError) {
+      expect(error.retryAfter).toBe(60)
+    }
+  })
+
   it('should convert object with status 500+ to HTTPError', () => {
     const error = normalizeError({ status: 500, message: 'Server error' })
     expect(error).toBeInstanceOf(HTTPError)
@@ -156,5 +216,47 @@ describe('normalizeError', () => {
     errors.forEach((error) => {
       expect(error).toBeInstanceOf(WebxaError)
     })
+  })
+})
+
+describe('parseRetryAfter', () => {
+  it('should parse valid numeric string', () => {
+    expect(parseRetryAfter('120')).toBe(120)
+  })
+
+  it('should return 60 for null', () => {
+    expect(parseRetryAfter(null)).toBe(60)
+  })
+
+  it('should return 60 for undefined', () => {
+    expect(parseRetryAfter(undefined)).toBe(60)
+  })
+
+  it('should return 60 for non-numeric string', () => {
+    expect(parseRetryAfter('soon')).toBe(60)
+  })
+
+  it('should return 60 for negative value', () => {
+    expect(parseRetryAfter('-5')).toBe(60)
+  })
+
+  it('should return 60 for empty string', () => {
+    expect(parseRetryAfter('')).toBe(60)
+  })
+
+  it('should handle zero as valid', () => {
+    expect(parseRetryAfter('0')).toBe(0)
+  })
+
+  it('should reject fractional values', () => {
+    expect(parseRetryAfter('1.5')).toBe(60)
+  })
+
+  it('should reject numeric prefix with trailing text', () => {
+    expect(parseRetryAfter('10s')).toBe(60)
+  })
+
+  it('should fall back for digit string that overflows to Infinity', () => {
+    expect(parseRetryAfter('9'.repeat(400))).toBe(60)
   })
 })

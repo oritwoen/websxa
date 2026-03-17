@@ -14,14 +14,21 @@ export const searchTool = tool({
     query: z.string().describe('Search query'),
     provider: z.enum(providerNames).optional().describe('Provider to use. Defaults to first available from env. Use "all" for parallel search.'),
     maxResults: z.number().min(1).max(20).optional().describe('Max results (default: 10)'),
+    includeDomains: z.array(z.string()).optional().describe('Only return results from these domains (e.g. ["github.com", "stackoverflow.com"])'),
+    excludeDomains: z.array(z.string()).optional().describe('Exclude results from these domains'),
+    category: z.string().optional().describe('Search category (e.g. "news", "general"). Provider support varies.'),
+    startPublishedDate: z.string().optional().describe('Filter results published after this date (ISO 8601, e.g. "2024-01-01")'),
+    endPublishedDate: z.string().optional().describe('Filter results published before this date (ISO 8601)'),
   }),
-  execute: async ({ query, provider: providerName, maxResults }) => {
+  execute: async ({ query, provider: providerName, maxResults, includeDomains, excludeDomains, category, startPublishedDate, endPublishedDate }) => {
+    const searchOptions = { maxResults, includeDomains, excludeDomains, category, startPublishedDate, endPublishedDate }
+
     if (providerName === 'all') {
-      return searchAll(query, { maxResults })
+      return searchAll(query, searchOptions)
     }
 
     const name = providerName ?? resolveDefaultProvider()
-    return create(name).search(query, { maxResults })
+    return create(name).search(query, searchOptions)
   },
 })
 
