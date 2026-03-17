@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { builtinProviders } from './core/providers.ts'
 import { create } from './core/registry.ts'
 import { searchAll } from './core/all.ts'
+import { EmptyQueryError } from './core/errors.ts'
 import { resolveDefaultProvider, listProviders } from './core/resolve.ts'
 import './providers/index.ts'
 
@@ -21,6 +22,10 @@ export const searchTool = tool({
     endPublishedDate: z.string().optional().describe('Filter results published before this date (ISO 8601)'),
   }),
   execute: async ({ query, provider: providerName, maxResults, includeDomains, excludeDomains, category, startPublishedDate, endPublishedDate }) => {
+    if (!query.trim()) {
+      throw new EmptyQueryError()
+    }
+
     const searchOptions = { maxResults, includeDomains, excludeDomains, category, startPublishedDate, endPublishedDate }
 
     if (providerName === 'all') {

@@ -150,6 +150,26 @@ describe('search command', () => {
     expect(exitSpy).toHaveBeenCalledWith(1)
   })
 
+  it('exits with error for empty query', async () => {
+    await expect(
+      runSearch({ query: '' }),
+    ).rejects.toThrow('__EXIT__')
+
+    expect(mockError).toHaveBeenCalledWith('Search query cannot be empty.')
+    expect(mockSearch).not.toHaveBeenCalled()
+    expect(exitSpy).toHaveBeenCalledWith(1)
+  })
+
+  it('exits with error for whitespace-only query', async () => {
+    await expect(
+      runSearch({ query: '   ' }),
+    ).rejects.toThrow('__EXIT__')
+
+    expect(mockError).toHaveBeenCalledWith('Search query cannot be empty.')
+    expect(mockSearch).not.toHaveBeenCalled()
+    expect(exitSpy).toHaveBeenCalledWith(1)
+  })
+
   it('shows a helpful message when no provider is configured', async () => {
     mockResolveDefaultProvider.mockImplementationOnce(() => {
       throw new NoProviderConfiguredError()

@@ -34,6 +34,11 @@ export default defineCommand({
     let providerName = args.provider
 
     try {
+      if (!args.query.trim()) {
+        consola.error('Search query cannot be empty.')
+        process.exit(1)
+      }
+
       const maxResults = parseMaxResults(args['max-results'])
       if (!maxResults.ok) {
         consola.error(maxResults.message)

@@ -6,7 +6,7 @@ export { builtinProviders, type WebSearchProviderName } from './core/providers.t
 
 export type { SearchResult, SearchOptions, SearchProvider, ProviderConfig, ProviderFactory, ClientOptions } from './core/types.ts'
 
-export { WebxaError, HTTPError, AuthError, RateLimitError, UnknownProviderError, NoProviderConfiguredError, normalizeError } from './core/errors.ts'
+export { WebxaError, HTTPError, AuthError, RateLimitError, UnknownProviderError, NoProviderConfiguredError, EmptyQueryError, normalizeError } from './core/errors.ts'
 
 export { Client, defaultClient } from './core/client.ts'
 

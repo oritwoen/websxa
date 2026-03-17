@@ -16,6 +16,7 @@ vi.mock('../../src/core/client.ts', () => ({
 }))
 
 import { searchTool } from '../../src/ai.ts'
+import { EmptyQueryError } from '../../src/core/errors.ts'
 
 const exaResponse = {
   requestId: 'test-req',
@@ -205,6 +206,24 @@ describe('searchTool', () => {
     const [, body] = mockPostJSON.mock.calls[0]
     expect(body.includeDomains).toEqual(['github.com'])
     expect(body.numResults).toBe(5)
+  })
+
+  it('rejects empty query', async () => {
+    await expect(
+      searchTool.execute!(
+        { query: '', provider: 'exa' },
+        { toolCallId: 'call-empty', messages: [] },
+      ),
+    ).rejects.toThrow(EmptyQueryError)
+  })
+
+  it('rejects whitespace-only query', async () => {
+    await expect(
+      searchTool.execute!(
+        { query: '   ', provider: 'exa' },
+        { toolCallId: 'call-ws', messages: [] },
+      ),
+    ).rejects.toThrow(EmptyQueryError)
   })
 
   it('execute with all provider queries all available providers', async () => {
