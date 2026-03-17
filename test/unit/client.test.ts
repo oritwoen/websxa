@@ -21,7 +21,6 @@ vi.mock('ofetch', () => ({
 }))
 
 import { Client, defaultClient, resetDefaultClientForTests } from '../../src/core/client.ts'
-import { parseRetryAfter } from '../../src/core/errors.ts'
 import { HTTPError, RateLimitError } from '../../src/core/errors.ts'
 import { version } from '../../src/version.ts'
 import { FetchError } from 'ofetch'
@@ -675,32 +674,3 @@ describe('Client', () => {
   })
 })
 
-describe('parseRetryAfter', () => {
-  it('should parse valid numeric string', () => {
-    expect(parseRetryAfter('120')).toBe(120)
-  })
-
-  it('should return 60 for null', () => {
-    expect(parseRetryAfter(null)).toBe(60)
-  })
-
-  it('should return 60 for undefined', () => {
-    expect(parseRetryAfter(undefined)).toBe(60)
-  })
-
-  it('should return 60 for non-numeric string', () => {
-    expect(parseRetryAfter('soon')).toBe(60)
-  })
-
-  it('should return 60 for negative value', () => {
-    expect(parseRetryAfter('-5')).toBe(60)
-  })
-
-  it('should return 60 for empty string', () => {
-    expect(parseRetryAfter('')).toBe(60)
-  })
-
-  it('should handle zero as valid', () => {
-    expect(parseRetryAfter('0')).toBe(0)
-  })
-})

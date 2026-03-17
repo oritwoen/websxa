@@ -6,6 +6,7 @@ import {
   RateLimitError,
   UnknownProviderError,
   normalizeError,
+  parseRetryAfter,
 } from '../../src/core/errors.ts'
 
 describe('WebxaError', () => {
@@ -215,5 +216,43 @@ describe('normalizeError', () => {
     errors.forEach((error) => {
       expect(error).toBeInstanceOf(WebxaError)
     })
+  })
+})
+
+describe('parseRetryAfter', () => {
+  it('should parse valid numeric string', () => {
+    expect(parseRetryAfter('120')).toBe(120)
+  })
+
+  it('should return 60 for null', () => {
+    expect(parseRetryAfter(null)).toBe(60)
+  })
+
+  it('should return 60 for undefined', () => {
+    expect(parseRetryAfter(undefined)).toBe(60)
+  })
+
+  it('should return 60 for non-numeric string', () => {
+    expect(parseRetryAfter('soon')).toBe(60)
+  })
+
+  it('should return 60 for negative value', () => {
+    expect(parseRetryAfter('-5')).toBe(60)
+  })
+
+  it('should return 60 for empty string', () => {
+    expect(parseRetryAfter('')).toBe(60)
+  })
+
+  it('should handle zero as valid', () => {
+    expect(parseRetryAfter('0')).toBe(0)
+  })
+
+  it('should reject fractional values', () => {
+    expect(parseRetryAfter('1.5')).toBe(60)
+  })
+
+  it('should reject numeric prefix with trailing text', () => {
+    expect(parseRetryAfter('10s')).toBe(60)
   })
 })

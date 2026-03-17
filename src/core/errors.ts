@@ -134,10 +134,10 @@ export function parseRetryAfter(header: string | null | undefined): number {
     return DEFAULT_RETRY_AFTER
   }
 
-  const parsed = Number.parseInt(header, 10)
-  if (!Number.isFinite(parsed) || parsed < 0) {
+  const trimmed = header.trim()
+  if (!/^\d+$/.test(trimmed)) {
     return DEFAULT_RETRY_AFTER
   }
 
-  return parsed
+  return Number.parseInt(trimmed, 10)
 }
