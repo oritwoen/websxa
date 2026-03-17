@@ -11,12 +11,31 @@ export interface SearchAllResult extends SearchResult {
   provider: string
 }
 
+export interface ProviderError {
+  provider: string
+  error: Error
+}
+
+export interface SearchAllResponse {
+  results: SearchAllResult[]
+  errors: ProviderError[]
+}
+
 /**
  * Query multiple providers in parallel and return deduplicated results.
  * Providers are auto-detected from env vars unless explicitly specified.
  * Individual provider failures don't affect other results.
  */
 export async function searchAll(query: string, options?: SearchAllOptions): Promise<SearchAllResult[]> {
+  const response = await searchAllDetailed(query, options)
+  return response.results
+}
+
+/**
+ * Like {@link searchAll}, but also returns per-provider errors so callers
+ * can tell which providers failed and why.
+ */
+export async function searchAllDetailed(query: string, options?: SearchAllOptions): Promise<SearchAllResponse> {
   const { providers: providerList, ...searchOptions } = options ?? {}
 
   if (providerList) {
@@ -37,14 +56,24 @@ export async function searchAll(query: string, options?: SearchAllOptions): Prom
   )
 
   const allResults: SearchAllResult[] = []
+  const errors: ProviderError[] = []
 
-  for (const result of settled) {
+  for (let i = 0; i < settled.length; i++) {
+    const result = settled[i]
     if (result.status === 'fulfilled') {
       allResults.push(...result.value)
+    } else {
+      errors.push({
+        provider: providerNames[i],
+        error: result.reason instanceof Error ? result.reason : new Error(String(result.reason)),
+      })
     }
   }
 
-  return deduplicateByUrl(allResults)
+  return {
+    results: deduplicateByUrl(allResults),
+    errors,
+  }
 }
 
 
