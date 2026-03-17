@@ -80,14 +80,14 @@ export class Client {
         const retryAfter = parseRetryAfter(
           error.response?.headers.get('Retry-After'),
         )
-        throw new RateLimitError(retryAfter)
+        return new RateLimitError(retryAfter)
       }
 
       const body = typeof error.data === 'string'
         ? error.data
         : JSON.stringify(error.data ?? '')
 
-      throw new HTTPError(error.statusCode ?? 0, sanitizeUrl(url), body)
+      return new HTTPError(error.statusCode ?? 0, sanitizeUrl(url), body)
     }
     return error instanceof Error ? error : new Error(String(error))
   }
