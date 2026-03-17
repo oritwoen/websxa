@@ -305,6 +305,7 @@ describe('Client', () => {
     })
 
     it('should fall back to 60 for non-numeric Retry-After header', async () => {
+      expect.assertions(2)
       const client = new Client()
 
       const error = new FetchError('Too many requests')
@@ -326,6 +327,7 @@ describe('Client', () => {
     })
 
     it('should fall back to 60 for negative Retry-After header', async () => {
+      expect.assertions(2)
       const client = new Client()
 
       const error = new FetchError('Too many requests')
