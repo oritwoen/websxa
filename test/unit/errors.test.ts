@@ -255,4 +255,8 @@ describe('parseRetryAfter', () => {
   it('should reject numeric prefix with trailing text', () => {
     expect(parseRetryAfter('10s')).toBe(60)
   })
+
+  it('should fall back for digit string that overflows to Infinity', () => {
+    expect(parseRetryAfter('9'.repeat(400))).toBe(60)
+  })
 })

@@ -139,5 +139,10 @@ export function parseRetryAfter(header: string | null | undefined): number {
     return DEFAULT_RETRY_AFTER
   }
 
-  return Number.parseInt(trimmed, 10)
+  const parsed = Number.parseInt(trimmed, 10)
+  if (!Number.isFinite(parsed)) {
+    return DEFAULT_RETRY_AFTER
+  }
+
+  return parsed
 }
