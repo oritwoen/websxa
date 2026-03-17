@@ -160,6 +160,29 @@ describe('normalizeError', () => {
     }
   })
 
+  it('should return 0 for zero Retry-After header on 429', () => {
+    const error = normalizeError({
+      status: 429,
+      message: 'Too many requests',
+      response: { headers: { get: () => '0' } },
+    })
+    expect(error).toBeInstanceOf(RateLimitError)
+    if (error instanceof RateLimitError) {
+      expect(error.retryAfter).toBe(0)
+    }
+  })
+
+  it('should fall back to 60 when response has no headers on 429', () => {
+    const error = normalizeError({
+      status: 429,
+      message: 'Too many requests',
+    })
+    expect(error).toBeInstanceOf(RateLimitError)
+    if (error instanceof RateLimitError) {
+      expect(error.retryAfter).toBe(60)
+    }
+  })
+
   it('should convert object with status 500+ to HTTPError', () => {
     const error = normalizeError({ status: 500, message: 'Server error' })
     expect(error).toBeInstanceOf(HTTPError)

@@ -1,7 +1,7 @@
 import { ofetch, FetchError } from 'ofetch'
 import type { $Fetch } from 'ofetch'
 import type { ClientOptions } from './types.ts'
-import { HTTPError, RateLimitError } from './errors.ts'
+import { HTTPError, RateLimitError, parseRetryAfter } from './errors.ts'
 import { version } from '../version.ts'
 
 const DEFAULT_MAX_RETRIES = 5
@@ -233,17 +233,3 @@ export function resetDefaultClientForTests(): void {
   _defaultClient = undefined
 }
 
-const DEFAULT_RETRY_AFTER = 60
-
-export function parseRetryAfter(header: string | null | undefined): number {
-  if (header == null) {
-    return DEFAULT_RETRY_AFTER
-  }
-
-  const parsed = Number.parseInt(header, 10)
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    return DEFAULT_RETRY_AFTER
-  }
-
-  return parsed
-}

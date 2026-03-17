@@ -109,7 +109,7 @@ export function normalizeError(error: unknown, provider?: string): WebxaError {
       case 404:
         return new HTTPError(404, '', message)
       case 429: {
-        const retryAfter = parseRetryAfterHeader(fetchError.response?.headers?.get('Retry-After'))
+        const retryAfter = parseRetryAfter(fetchError.response?.headers?.get('Retry-After'))
         return new RateLimitError(retryAfter)
       }
       default:
@@ -127,9 +127,9 @@ export function normalizeError(error: unknown, provider?: string): WebxaError {
   return new WebxaError(String(error))
 }
 
-const DEFAULT_RETRY_AFTER = 60
+export const DEFAULT_RETRY_AFTER = 60
 
-function parseRetryAfterHeader(header: string | null | undefined): number {
+export function parseRetryAfter(header: string | null | undefined): number {
   if (header == null) {
     return DEFAULT_RETRY_AFTER
   }

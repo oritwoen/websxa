@@ -20,7 +20,8 @@ vi.mock('ofetch', () => ({
   },
 }))
 
-import { Client, defaultClient, resetDefaultClientForTests, parseRetryAfter } from '../../src/core/client.ts'
+import { Client, defaultClient, resetDefaultClientForTests } from '../../src/core/client.ts'
+import { parseRetryAfter } from '../../src/core/errors.ts'
 import { HTTPError, RateLimitError } from '../../src/core/errors.ts'
 import { version } from '../../src/version.ts'
 import { FetchError } from 'ofetch'
