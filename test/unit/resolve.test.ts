@@ -54,7 +54,7 @@ describe('resolve', () => {
   })
 
   describe('resolveDefaultProvider', () => {
-    it('should return first provider with env var set', () => {
+    it('should return brave when only BRAVE_API_KEY is set', () => {
       process.env.BRAVE_API_KEY = 'test-key'
       expect(resolveDefaultProvider()).toBe('brave')
     })
