@@ -11,6 +11,8 @@ interface TavilySearchRequest {
   search_depth?: 'basic' | 'advanced'
   include_answer?: boolean
   include_raw_content?: boolean
+  include_domains?: string[]
+  exclude_domains?: string[]
 }
 
 interface TavilyResult {
@@ -55,6 +57,8 @@ class TavilyProvider implements SearchProvider {
       search_depth: 'basic',
       include_answer: false,
       include_raw_content: false,
+      include_domains: options?.includeDomains,
+      exclude_domains: options?.excludeDomains,
     } satisfies TavilySearchRequest
 
     try {
