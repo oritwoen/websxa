@@ -1,5 +1,5 @@
 import type { SearchResult, SearchOptions } from './types.ts'
-import { UnknownProviderError, NoProviderConfiguredError } from './errors.ts'
+import { UnknownProviderError, NoProviderConfiguredError, EmptyQueryError } from './errors.ts'
 import { create, has } from './registry.ts'
 import { detectAvailableProviders } from './resolve.ts'
 
@@ -36,6 +36,10 @@ export async function searchAll(query: string, options?: SearchAllOptions): Prom
  * can tell which providers failed and why.
  */
 export async function searchAllDetailed(query: string, options?: SearchAllOptions): Promise<SearchAllResponse> {
+  if (!query.trim()) {
+    throw new EmptyQueryError()
+  }
+
   const { providers: providerList, ...searchOptions } = options ?? {}
 
   if (providerList) {

@@ -66,6 +66,14 @@ export class UnknownProviderError extends WebxaError {
   }
 }
 
+/** Thrown when the search query is empty or whitespace-only. */
+export class EmptyQueryError extends WebxaError {
+  constructor() {
+    super('Search query cannot be empty')
+    this.name = 'EmptyQueryError'
+  }
+}
+
 /** Thrown when no provider can be selected from env or registry. */
 export class NoProviderConfiguredError extends WebxaError {
   constructor() {

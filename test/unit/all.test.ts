@@ -16,7 +16,7 @@ vi.mock('../../src/core/client.ts', () => ({
 }))
 
 import { searchAll, searchAllDetailed } from '../../src/core/all.ts'
-import { UnknownProviderError, NoProviderConfiguredError } from '../../src/core/errors.ts'
+import { UnknownProviderError, NoProviderConfiguredError, EmptyQueryError } from '../../src/core/errors.ts'
 
 import '../../src/providers/index.ts'
 
@@ -346,6 +346,24 @@ describe('searchAll', () => {
     await expect(
       searchAll('test', { providers: [] }),
     ).rejects.toThrow(NoProviderConfiguredError)
+  })
+
+  it('throws EmptyQueryError for empty string query', async () => {
+    await expect(
+      searchAll('', { providers: ['exa'] }),
+    ).rejects.toThrow(EmptyQueryError)
+
+    expect(mockPostJSON).not.toHaveBeenCalled()
+    expect(mockGetJSON).not.toHaveBeenCalled()
+  })
+
+  it('throws EmptyQueryError for whitespace-only query', async () => {
+    await expect(
+      searchAll('   ', { providers: ['exa'] }),
+    ).rejects.toThrow(EmptyQueryError)
+
+    expect(mockPostJSON).not.toHaveBeenCalled()
+    expect(mockGetJSON).not.toHaveBeenCalled()
   })
 })
 
