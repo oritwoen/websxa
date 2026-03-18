@@ -293,6 +293,14 @@ describe('validateDateFilters', () => {
     expect(() => validateDateFilters('2024-02-30')).toThrow(InvalidDateFilterError)
   })
 
+  it('rejects impossible datetime calendar dates', () => {
+    expect(() => validateDateFilters('2024-02-30T12:00:00Z')).toThrow(InvalidDateFilterError)
+  })
+
+  it('rejects datetime without explicit offset', () => {
+    expect(() => validateDateFilters('2024-01-01T00:00:00')).toThrow(InvalidDateFilterError)
+  })
+
   it('rejects reversed date range', () => {
     expect(() => validateDateFilters('2025-06-01', '2025-01-01')).toThrow(InvalidDateFilterError)
   })

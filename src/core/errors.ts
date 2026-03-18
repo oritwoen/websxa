@@ -86,16 +86,19 @@ export class NoProviderConfiguredError extends WebxaError {
 export class InvalidDateFilterError extends WebxaError {
   readonly field: string
   readonly value: string
+  readonly reason: string
 
   constructor(field: string, value: string, reason: string) {
     super(`Invalid date filter ${field}="${value}": ${reason}`)
     this.name = 'InvalidDateFilterError'
     this.field = field
     this.value = value
+    this.reason = reason
   }
 }
 
-const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?)?$/
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2}))?$/
+const HAS_OFFSET_RE = /Z|[+-]\d{2}:\d{2}$/
 
 export function validateDateFilters(startPublishedDate?: string, endPublishedDate?: string): void {
   for (const [field, value] of [['startPublishedDate', startPublishedDate], ['endPublishedDate', endPublishedDate]] as const) {
@@ -103,16 +106,15 @@ export function validateDateFilters(startPublishedDate?: string, endPublishedDat
     if (!ISO_DATE_RE.test(value)) {
       throw new InvalidDateFilterError(field, value, 'must be ISO 8601 (e.g. "2024-01-01" or "2024-01-01T00:00:00Z")')
     }
-    const parsed = new Date(value)
-    if (Number.isNaN(parsed.getTime())) {
-      throw new InvalidDateFilterError(field, value, 'not a valid date')
+    const hasTime = value.includes('T')
+    if (hasTime && !HAS_OFFSET_RE.test(value)) {
+      throw new InvalidDateFilterError(field, value, 'datetime must include Z or ±HH:mm offset')
     }
-    const hasTimezone = value.includes('T')
-    if (!hasTimezone) {
-      const [y, m, d] = value.split('-').map(Number)
-      if (parsed.getUTCFullYear() !== y || parsed.getUTCMonth() + 1 !== m || parsed.getUTCDate() !== d) {
-        throw new InvalidDateFilterError(field, value, 'not a valid calendar date')
-      }
+    const dateOnly = value.split('T')[0]
+    const [y, m, d] = dateOnly.split('-').map(Number)
+    const probe = new Date(Date.UTC(y, m - 1, d))
+    if (probe.getUTCFullYear() !== y || probe.getUTCMonth() + 1 !== m || probe.getUTCDate() !== d) {
+      throw new InvalidDateFilterError(field, value, 'not a valid calendar date')
     }
   }
 
