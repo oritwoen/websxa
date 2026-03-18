@@ -329,4 +329,17 @@ describe('validateDateFilters', () => {
       }
     }
   })
+
+  it('sets field correctly for endPublishedDate error', () => {
+    try {
+      validateDateFilters(undefined, 'garbage')
+      expect.unreachable('should have thrown')
+    } catch (error) {
+      expect(error).toBeInstanceOf(InvalidDateFilterError)
+      if (error instanceof InvalidDateFilterError) {
+        expect(error.field).toBe('endPublishedDate')
+        expect(error.value).toBe('garbage')
+      }
+    }
+  })
 })
