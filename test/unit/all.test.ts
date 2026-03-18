@@ -16,7 +16,7 @@ vi.mock('../../src/core/client.ts', () => ({
 }))
 
 import { searchAll, searchAllDetailed } from '../../src/core/all.ts'
-import { UnknownProviderError, NoProviderConfiguredError, EmptyQueryError } from '../../src/core/errors.ts'
+import { UnknownProviderError, NoProviderConfiguredError, EmptyQueryError, InvalidDateFilterError } from '../../src/core/errors.ts'
 
 import '../../src/providers/index.ts'
 
@@ -421,5 +421,54 @@ describe('searchAllDetailed', () => {
     expect(response.errors).toHaveLength(1)
     expect(response.errors[0].error).toBeInstanceOf(Error)
     expect(response.errors[0].error.message).toBe('string rejection')
+  })
+
+  it('throws InvalidDateFilterError for malformed startPublishedDate', async () => {
+    await expect(
+      searchAllDetailed('test', { providers: ['searxng'], startPublishedDate: 'not-a-date' }),
+    ).rejects.toThrow(InvalidDateFilterError)
+
+    expect(mockPostJSON).not.toHaveBeenCalled()
+    expect(mockGetJSON).not.toHaveBeenCalled()
+  })
+
+  it('throws InvalidDateFilterError for malformed endPublishedDate', async () => {
+    await expect(
+      searchAllDetailed('test', { providers: ['searxng'], endPublishedDate: '13/01/2024' }),
+    ).rejects.toThrow(InvalidDateFilterError)
+  })
+
+  it('throws InvalidDateFilterError when start is after end', async () => {
+    await expect(
+      searchAllDetailed('test', {
+        providers: ['searxng'],
+        startPublishedDate: '2025-06-01',
+        endPublishedDate: '2025-01-01',
+      }),
+    ).rejects.toThrow(InvalidDateFilterError)
+  })
+
+  it('accepts valid ISO 8601 date strings', async () => {
+    mockGetJSON.mockResolvedValue({ results: [] })
+
+    await expect(
+      searchAllDetailed('test', {
+        providers: ['searxng'],
+        startPublishedDate: '2024-01-01',
+        endPublishedDate: '2024-12-31',
+      }),
+    ).resolves.toBeDefined()
+  })
+
+  it('accepts ISO 8601 datetime with timezone', async () => {
+    mockGetJSON.mockResolvedValue({ results: [] })
+
+    await expect(
+      searchAllDetailed('test', {
+        providers: ['searxng'],
+        startPublishedDate: '2024-01-01T00:00:00Z',
+        endPublishedDate: '2024-12-31T23:59:59+02:00',
+      }),
+    ).resolves.toBeDefined()
   })
 })

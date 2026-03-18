@@ -1,5 +1,5 @@
 import type { SearchResult, SearchOptions } from './types.ts'
-import { UnknownProviderError, NoProviderConfiguredError, EmptyQueryError } from './errors.ts'
+import { UnknownProviderError, NoProviderConfiguredError, EmptyQueryError, validateDateFilters } from './errors.ts'
 import { create, has } from './registry.ts'
 import { detectAvailableProviders } from './resolve.ts'
 
@@ -39,6 +39,8 @@ export async function searchAllDetailed(query: string, options?: SearchAllOption
   if (!query.trim()) {
     throw new EmptyQueryError()
   }
+
+  validateDateFilters(options?.startPublishedDate, options?.endPublishedDate)
 
   const { providers: providerList, ...searchOptions } = options ?? {}
 

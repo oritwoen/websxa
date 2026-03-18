@@ -82,6 +82,45 @@ export class NoProviderConfiguredError extends WebxaError {
   }
 }
 
+/** Thrown when a date filter string is not valid ISO 8601 or the range is reversed. */
+export class InvalidDateFilterError extends WebxaError {
+  readonly field: string
+  readonly value: string
+
+  constructor(field: string, value: string, reason: string) {
+    super(`Invalid date filter ${field}="${value}": ${reason}`)
+    this.name = 'InvalidDateFilterError'
+    this.field = field
+    this.value = value
+  }
+}
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?)?$/
+
+export function validateDateFilters(startPublishedDate?: string, endPublishedDate?: string): void {
+  for (const [field, value] of [['startPublishedDate', startPublishedDate], ['endPublishedDate', endPublishedDate]] as const) {
+    if (value == null) continue
+    if (!ISO_DATE_RE.test(value)) {
+      throw new InvalidDateFilterError(field, value, 'must be ISO 8601 (e.g. "2024-01-01" or "2024-01-01T00:00:00Z")')
+    }
+    const parsed = new Date(value)
+    if (Number.isNaN(parsed.getTime())) {
+      throw new InvalidDateFilterError(field, value, 'not a valid date')
+    }
+    const dateOnly = value.split('T')[0]
+    const [y, m, d] = dateOnly.split('-').map(Number)
+    if (parsed.getUTCFullYear() !== y || parsed.getUTCMonth() + 1 !== m || parsed.getUTCDate() !== d) {
+      throw new InvalidDateFilterError(field, value, 'not a valid calendar date')
+    }
+  }
+
+  if (startPublishedDate != null && endPublishedDate != null) {
+    if (Date.parse(startPublishedDate) > Date.parse(endPublishedDate)) {
+      throw new InvalidDateFilterError('startPublishedDate', startPublishedDate, `start date is after end date "${endPublishedDate}"`)
+    }
+  }
+}
+
 /**
  * Convert any caught error into a typed {@link WebxaError} subclass.
  * Maps HTTP status codes to specific error types (401 → AuthError, 429 → RateLimitError).
