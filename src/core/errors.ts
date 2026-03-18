@@ -110,6 +110,10 @@ export function validateDateFilters(startPublishedDate?: string, endPublishedDat
     if (hasTime && !HAS_OFFSET_RE.test(value)) {
       throw new InvalidDateFilterError(field, value, 'datetime must include Z or ±HH:mm offset')
     }
+    const parsed = new Date(value)
+    if (Number.isNaN(parsed.getTime())) {
+      throw new InvalidDateFilterError(field, value, 'not a valid date')
+    }
     const dateOnly = value.split('T')[0]
     const [y, m, d] = dateOnly.split('-').map(Number)
     const probe = new Date(Date.UTC(y, m - 1, d))

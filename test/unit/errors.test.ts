@@ -301,6 +301,10 @@ describe('validateDateFilters', () => {
     expect(() => validateDateFilters('2024-01-01T00:00:00')).toThrow(InvalidDateFilterError)
   })
 
+  it('rejects invalid time components', () => {
+    expect(() => validateDateFilters('2024-01-01T25:61:00Z')).toThrow(InvalidDateFilterError)
+  })
+
   it('rejects reversed date range', () => {
     expect(() => validateDateFilters('2025-06-01', '2025-01-01')).toThrow(InvalidDateFilterError)
   })
