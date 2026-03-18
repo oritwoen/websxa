@@ -352,12 +352,18 @@ describe('searchAll', () => {
     await expect(
       searchAll('', { providers: ['exa'] }),
     ).rejects.toThrow(EmptyQueryError)
+
+    expect(mockPostJSON).not.toHaveBeenCalled()
+    expect(mockGetJSON).not.toHaveBeenCalled()
   })
 
   it('throws EmptyQueryError for whitespace-only query', async () => {
     await expect(
       searchAll('   ', { providers: ['exa'] }),
     ).rejects.toThrow(EmptyQueryError)
+
+    expect(mockPostJSON).not.toHaveBeenCalled()
+    expect(mockGetJSON).not.toHaveBeenCalled()
   })
 })
 

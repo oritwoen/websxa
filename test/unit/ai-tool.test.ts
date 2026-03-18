@@ -215,6 +215,9 @@ describe('searchTool', () => {
         { toolCallId: 'call-empty', messages: [] },
       ),
     ).rejects.toThrow(EmptyQueryError)
+
+    expect(mockPostJSON).not.toHaveBeenCalled()
+    expect(mockGetJSON).not.toHaveBeenCalled()
   })
 
   it('rejects whitespace-only query', async () => {
@@ -224,6 +227,9 @@ describe('searchTool', () => {
         { toolCallId: 'call-ws', messages: [] },
       ),
     ).rejects.toThrow(EmptyQueryError)
+
+    expect(mockPostJSON).not.toHaveBeenCalled()
+    expect(mockGetJSON).not.toHaveBeenCalled()
   })
 
   it('execute with all provider queries all available providers', async () => {
