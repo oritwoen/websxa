@@ -301,6 +301,10 @@ describe('validateDateFilters', () => {
     expect(() => validateDateFilters('2024-06-15', '2024-06-15')).not.toThrow()
   })
 
+  it('accepts datetime with extreme timezone offset', () => {
+    expect(() => validateDateFilters('2024-01-01T00:00:00+14:00')).not.toThrow()
+  })
+
   it('sets field and value on thrown error', () => {
     try {
       validateDateFilters('garbage')

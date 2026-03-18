@@ -107,10 +107,12 @@ export function validateDateFilters(startPublishedDate?: string, endPublishedDat
     if (Number.isNaN(parsed.getTime())) {
       throw new InvalidDateFilterError(field, value, 'not a valid date')
     }
-    const dateOnly = value.split('T')[0]
-    const [y, m, d] = dateOnly.split('-').map(Number)
-    if (parsed.getUTCFullYear() !== y || parsed.getUTCMonth() + 1 !== m || parsed.getUTCDate() !== d) {
-      throw new InvalidDateFilterError(field, value, 'not a valid calendar date')
+    const hasTimezone = value.includes('T')
+    if (!hasTimezone) {
+      const [y, m, d] = value.split('-').map(Number)
+      if (parsed.getUTCFullYear() !== y || parsed.getUTCMonth() + 1 !== m || parsed.getUTCDate() !== d) {
+        throw new InvalidDateFilterError(field, value, 'not a valid calendar date')
+      }
     }
   }
 
