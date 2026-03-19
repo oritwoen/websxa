@@ -5,8 +5,10 @@ import {
   AuthError,
   RateLimitError,
   UnknownProviderError,
+  InvalidDateFilterError,
   normalizeError,
   parseRetryAfter,
+  validateDateFilters,
 } from '../../src/core/errors.ts'
 
 describe('WebxaError', () => {
@@ -258,5 +260,86 @@ describe('parseRetryAfter', () => {
 
   it('should fall back for digit string that overflows to Infinity', () => {
     expect(parseRetryAfter('9'.repeat(400))).toBe(60)
+  })
+})
+
+describe('validateDateFilters', () => {
+  it('accepts undefined dates', () => {
+    expect(() => validateDateFilters()).not.toThrow()
+    expect(() => validateDateFilters(undefined, undefined)).not.toThrow()
+  })
+
+  it('accepts valid date-only strings', () => {
+    expect(() => validateDateFilters('2024-01-01', '2024-12-31')).not.toThrow()
+  })
+
+  it('accepts valid datetime with timezone', () => {
+    expect(() => validateDateFilters('2024-01-01T00:00:00Z', '2024-12-31T23:59:59+02:00')).not.toThrow()
+  })
+
+  it('accepts single date without the other', () => {
+    expect(() => validateDateFilters('2024-06-15')).not.toThrow()
+    expect(() => validateDateFilters(undefined, '2024-06-15')).not.toThrow()
+  })
+
+  it('rejects non-ISO format', () => {
+    expect(() => validateDateFilters('13/01/2024')).toThrow(InvalidDateFilterError)
+    expect(() => validateDateFilters('not-a-date')).toThrow(InvalidDateFilterError)
+    expect(() => validateDateFilters('Jan 1, 2024')).toThrow(InvalidDateFilterError)
+  })
+
+  it('rejects impossible calendar dates', () => {
+    expect(() => validateDateFilters('2024-13-01')).toThrow(InvalidDateFilterError)
+    expect(() => validateDateFilters('2024-02-30')).toThrow(InvalidDateFilterError)
+  })
+
+  it('rejects impossible datetime calendar dates', () => {
+    expect(() => validateDateFilters('2024-02-30T12:00:00Z')).toThrow(InvalidDateFilterError)
+  })
+
+  it('rejects datetime without explicit offset', () => {
+    expect(() => validateDateFilters('2024-01-01T00:00:00')).toThrow(InvalidDateFilterError)
+  })
+
+  it('rejects invalid time components', () => {
+    expect(() => validateDateFilters('2024-01-01T25:61:00Z')).toThrow(InvalidDateFilterError)
+  })
+
+  it('rejects reversed date range', () => {
+    expect(() => validateDateFilters('2025-06-01', '2025-01-01')).toThrow(InvalidDateFilterError)
+  })
+
+  it('accepts equal start and end dates', () => {
+    expect(() => validateDateFilters('2024-06-15', '2024-06-15')).not.toThrow()
+  })
+
+  it('accepts datetime with extreme timezone offset', () => {
+    expect(() => validateDateFilters('2024-01-01T00:00:00+14:00')).not.toThrow()
+  })
+
+  it('sets field and value on thrown error', () => {
+    try {
+      validateDateFilters('garbage')
+      expect.unreachable('should have thrown')
+    } catch (error) {
+      expect(error).toBeInstanceOf(InvalidDateFilterError)
+      if (error instanceof InvalidDateFilterError) {
+        expect(error.field).toBe('startPublishedDate')
+        expect(error.value).toBe('garbage')
+      }
+    }
+  })
+
+  it('sets field correctly for endPublishedDate error', () => {
+    try {
+      validateDateFilters(undefined, 'garbage')
+      expect.unreachable('should have thrown')
+    } catch (error) {
+      expect(error).toBeInstanceOf(InvalidDateFilterError)
+      if (error instanceof InvalidDateFilterError) {
+        expect(error.field).toBe('endPublishedDate')
+        expect(error.value).toBe('garbage')
+      }
+    }
   })
 })
