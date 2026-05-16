@@ -1,7 +1,7 @@
 {
   "name": "websxa-opencode",
   "version": "0.1.2",
-  "description": "OpenCode plugin for websxa web search. Temporary standalone package until subpath imports land upstream.",
+  "description": "OpenCode plugin for askweb web search. Temporary standalone package until subpath imports land upstream.",
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
@@ -32,7 +32,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "websxa": "workspace:*"
+    "askweb": "workspace:*"
   },
   "devDependencies": {
     "@opencode-ai/plugin": "^1.2.23",

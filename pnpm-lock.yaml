@@ -48,7 +48,7 @@ importers:
 
   packages/websxa-opencode:
     dependencies:
-      websxa:
+      askweb:
         specifier: workspace:*
         version: link:../..
     devDependencies:

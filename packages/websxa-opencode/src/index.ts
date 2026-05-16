@@ -1,1 +1,1 @@
-export { default, WebsxaPlugin } from 'websxa/opencode'
+export { default, WebsxaPlugin } from 'askweb/opencode'

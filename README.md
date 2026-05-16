@@ -1,7 +1,7 @@
-# websxa
+# askweb
 
-[![npm version](https://img.shields.io/npm/v/websxa?style=flat&colorA=130f40&colorB=474787)](https://npmjs.com/package/websxa)
-[![npm downloads](https://img.shields.io/npm/dm/websxa?style=flat&colorA=130f40&colorB=474787)](https://npm.chart.dev/websxa)
+[![npm version](https://img.shields.io/npm/v/askweb?style=flat&colorA=130f40&colorB=474787)](https://npmjs.com/package/askweb)
+[![npm downloads](https://img.shields.io/npm/dm/askweb?style=flat&colorA=130f40&colorB=474787)](https://npm.chart.dev/askweb)
 [![license](https://img.shields.io/github/license/oritwoen/websxa?style=flat&colorA=130f40&colorB=474787)](https://github.com/oritwoen/websxa/blob/main/LICENSE)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/oritwoen/websxa)
 
@@ -9,15 +9,15 @@ One API for Brave, Exa, Tavily, SerpAPI, and SearXNG. Write your search logic on
 
 If you're building an AI agent or a CLI tool that needs web search, you don't want to hardcode a single provider's API. They all return roughly the same thing, a list of URLs with titles and snippets, but the auth, endpoints, and response shapes are all different. Exa uses POST with `x-api-key`, Brave uses GET with `X-Subscription-Token`, Tavily puts the key in the request body. And so on.
 
-`websxa` normalizes all of that behind a single interface. It also ships an [AI SDK](https://ai-sdk.dev/) tool and a CLI.
+`askweb` normalizes all of that behind a single interface. It also ships an [AI SDK](https://ai-sdk.dev/) tool and a CLI.
 
 ## Install
 
 ```bash
-pnpm add websxa
+pnpm add askweb
 ```
 
-For the AI SDK tool (`websxa/ai` subpath), you also need `ai` and `zod` as peer dependencies:
+For the AI SDK tool (`askweb/ai` subpath), you also need `ai` and `zod` as peer dependencies:
 
 ```bash
 pnpm add ai zod
@@ -28,7 +28,7 @@ pnpm add ai zod
 Set your API key as an environment variable and create a provider:
 
 ```typescript
-import { create } from 'websxa'
+import { create } from 'askweb'
 
 // Reads EXA_API_KEY from process.env
 const exa = create('exa')
@@ -58,7 +58,7 @@ const exa = create('exa', { apiKey: 'your-key-here' })
 Query all available providers in parallel and get deduplicated results:
 
 ```typescript
-import { searchAll } from 'websxa'
+import { searchAll } from 'askweb'
 
 // Detects providers from env vars, queries them in parallel
 const results = await searchAll('latest node.js release')
@@ -81,11 +81,11 @@ const results = await searchAll('query', {
 
 ### AI SDK tool
 
-The `websxa/ai` subpath exports a ready-made tool compatible with [Vercel AI SDK](https://ai-sdk.dev/docs/foundations/tools):
+The `askweb/ai` subpath exports a ready-made tool compatible with [Vercel AI SDK](https://ai-sdk.dev/docs/foundations/tools):
 
 ```typescript
 import { generateText } from 'ai'
-import { searchTool } from 'websxa/ai'
+import { searchTool } from 'askweb/ai'
 
 const { text } = await generateText({
   model: yourModel,
@@ -107,15 +107,15 @@ When no provider is specified, the tool auto-detects the first available one fro
 ## CLI
 
 ```bash
-websxa search "your query" --provider brave --max-results 5
-websxa search "your query" --json
-websxa providers
+askweb search "your query" --provider brave --max-results 5
+askweb search "your query" --json
+askweb providers
 ```
 
 | Command | Description |
 |---------|-------------|
-| `websxa search <query>` | Search the web using a provider |
-| `websxa providers` | List built-in providers |
+| `askweb search <query>` | Search the web using a provider |
+| `askweb providers` | List built-in providers |
 
 | Flag | Description |
 |------|-------------|
@@ -133,7 +133,7 @@ websxa providers
 | SerpAPI | `SERPAPI_API_KEY` | Query param | 100 queries/mo |
 | Tavily | `TAVILY_API_KEY` | Body | 1k queries/mo |
 
-SearXNG requires no API key. It's a self-hosted metasearch engine. By default websxa connects to `http://localhost:8080`. Override with `baseURL`:
+SearXNG requires no API key. It's a self-hosted metasearch engine. By default askweb connects to `http://localhost:8080`. Override with `baseURL`:
 
 ```typescript
 const searx = create('searxng', { baseURL: 'https://searx.example.com' })
@@ -144,7 +144,7 @@ const searx = create('searxng', { baseURL: 'https://searx.example.com' })
 All providers throw the same error types:
 
 ```typescript
-import { AuthError, RateLimitError, HTTPError, UnknownProviderError } from 'websxa'
+import { AuthError, RateLimitError, HTTPError, UnknownProviderError } from 'askweb'
 
 try {
   const results = await provider.search('query')
