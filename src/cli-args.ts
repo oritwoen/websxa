@@ -1,7 +1,6 @@
 const passthroughFirstArgs = new Set([
   'search',
   'providers',
-  'help',
 ])
 
 const helpOrVersionFlags = new Set([

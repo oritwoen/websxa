@@ -19,6 +19,7 @@ describe('CLI main args', () => {
       'search',
       'whatever what that means',
     ])
+    expect(normalizeMainArgs(['help'])).toEqual(['search', 'help'])
   })
 
   it('allows search flags before the bare query', () => {
