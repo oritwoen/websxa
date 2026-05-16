@@ -7,9 +7,9 @@ import { version } from '../version.ts'
 const DEFAULT_MAX_RETRIES = 5
 const DEFAULT_BASE_DELAY = 50
 const DEFAULT_TIMEOUT = 30_000
-const DEFAULT_USER_AGENT = `webxa/${version}`
+const DEFAULT_USER_AGENT = `askweb/${version}`
 
-/** HTTP client with exponential backoff retry and error mapping to webxa error types. */
+/** HTTP client with exponential backoff retry and error mapping to askweb error types. */
 export class Client {
   readonly maxRetries: number
   readonly baseDelay: number

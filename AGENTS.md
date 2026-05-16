@@ -6,7 +6,7 @@
 
 ## OVERVIEW
 
-`webxa` is a unified web search provider for agents and CLI. The goal is to normalize multiple web search backends behind one stable TypeScript API and one stable command-line interface, so agent runtimes do not need provider-specific glue.
+`askweb` is a unified web search provider for agents and CLI. The goal is to normalize multiple web search backends behind one stable TypeScript API and one stable command-line interface, so agent runtimes do not need provider-specific glue.
 
 ## STRUCTURE
 

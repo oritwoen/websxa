@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { builtinProviders, create, version } from '../src/index.ts'
 
-describe('webxa', () => {
+describe('askweb', () => {
   it('should export version matching package.json', () => {
     expect(version).toMatch(/^\d+\.\d+\.\d+/)
   })

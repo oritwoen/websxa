@@ -10,7 +10,7 @@ vi.mock('../../src/core/client.ts', () => ({
     maxRetries: 5,
     baseDelay: 50,
     timeout: 30000,
-    userAgent: 'webxa/0.0.1',
+    userAgent: 'askweb/0.0.1',
   })),
 }))
 

@@ -46,9 +46,9 @@ importers:
         specifier: ^4.3.6
         version: 4.3.6
 
-  packages/websxa-opencode:
+  packages/askweb-opencode:
     dependencies:
-      websxa:
+      askweb:
         specifier: workspace:*
         version: link:../..
     devDependencies:

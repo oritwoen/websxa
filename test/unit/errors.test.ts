@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  WebxaError,
+  AskwebError,
   HTTPError,
   AuthError,
   RateLimitError,
@@ -11,17 +11,17 @@ import {
   validateDateFilters,
 } from '../../src/core/errors.ts'
 
-describe('WebxaError', () => {
+describe('AskwebError', () => {
   it('should instantiate with message', () => {
-    const error = new WebxaError('Test error')
+    const error = new AskwebError('Test error')
     expect(error.message).toBe('Test error')
-    expect(error.name).toBe('WebxaError')
+    expect(error.name).toBe('AskwebError')
     expect(error).toBeInstanceOf(Error)
   })
 
-  it('should be instanceof WebxaError', () => {
-    const error = new WebxaError('Test')
-    expect(error).toBeInstanceOf(WebxaError)
+  it('should be instanceof AskwebError', () => {
+    const error = new AskwebError('Test')
+    expect(error).toBeInstanceOf(AskwebError)
   })
 })
 
@@ -31,7 +31,7 @@ describe('HTTPError', () => {
     expect(error.statusCode).toBe(404)
     expect(error.url).toBe('https://example.com')
     expect(error.body).toBe('Not found')
-    expect(error).toBeInstanceOf(WebxaError)
+    expect(error).toBeInstanceOf(AskwebError)
   })
 
   it('should identify 404 as not found', () => {
@@ -63,7 +63,7 @@ describe('AuthError', () => {
     expect(error.provider).toBe('brave')
     expect(error.message).toBe('Invalid API key')
     expect(error.name).toBe('AuthError')
-    expect(error).toBeInstanceOf(WebxaError)
+    expect(error).toBeInstanceOf(AskwebError)
   })
 })
 
@@ -72,7 +72,7 @@ describe('RateLimitError', () => {
     const error = new RateLimitError(60)
     expect(error.retryAfter).toBe(60)
     expect(error.name).toBe('RateLimitError')
-    expect(error).toBeInstanceOf(WebxaError)
+    expect(error).toBeInstanceOf(AskwebError)
   })
 })
 
@@ -81,22 +81,22 @@ describe('UnknownProviderError', () => {
     const error = new UnknownProviderError('unknown-provider')
     expect(error.provider).toBe('unknown-provider')
     expect(error.name).toBe('UnknownProviderError')
-    expect(error).toBeInstanceOf(WebxaError)
+    expect(error).toBeInstanceOf(AskwebError)
   })
 })
 
 describe('normalizeError', () => {
-  it('should pass through WebxaError', () => {
-    const original = new WebxaError('Test error')
+  it('should pass through AskwebError', () => {
+    const original = new AskwebError('Test error')
     const normalized = normalizeError(original)
     expect(normalized).toBe(original)
-    expect(normalized).toBeInstanceOf(WebxaError)
+    expect(normalized).toBeInstanceOf(AskwebError)
   })
 
   it('should convert object with status 401 to AuthError', () => {
     const error = normalizeError({ status: 401, message: 'Unauthorized' })
     expect(error).toBeInstanceOf(AuthError)
-    expect(error).toBeInstanceOf(WebxaError)
+    expect(error).toBeInstanceOf(AskwebError)
   })
 
   it('should convert HTTPError 401 to AuthError when provider is known', () => {
@@ -124,7 +124,7 @@ describe('normalizeError', () => {
   it('should convert object with status 429 to RateLimitError', () => {
     const error = normalizeError({ status: 429, message: 'Too many requests' })
     expect(error).toBeInstanceOf(RateLimitError)
-    expect(error).toBeInstanceOf(WebxaError)
+    expect(error).toBeInstanceOf(AskwebError)
   })
 
   it('should use numeric Retry-After header for 429 when available', () => {
@@ -189,25 +189,25 @@ describe('normalizeError', () => {
   it('should convert object with status 500+ to HTTPError', () => {
     const error = normalizeError({ status: 500, message: 'Server error' })
     expect(error).toBeInstanceOf(HTTPError)
-    expect(error).toBeInstanceOf(WebxaError)
+    expect(error).toBeInstanceOf(AskwebError)
   })
 
-  it('should convert generic Error to WebxaError', () => {
+  it('should convert generic Error to AskwebError', () => {
     const original = new Error('Generic error')
     const normalized = normalizeError(original)
-    expect(normalized).toBeInstanceOf(WebxaError)
+    expect(normalized).toBeInstanceOf(AskwebError)
     expect(normalized.message).toContain('Generic error')
   })
 
-  it('should convert string to WebxaError', () => {
+  it('should convert string to AskwebError', () => {
     const normalized = normalizeError('String error')
-    expect(normalized).toBeInstanceOf(WebxaError)
+    expect(normalized).toBeInstanceOf(AskwebError)
     expect(normalized.message).toContain('String error')
   })
 
-  it('all normalized errors should be instanceof WebxaError', () => {
+  it('all normalized errors should be instanceof AskwebError', () => {
     const errors = [
-      normalizeError(new WebxaError('test')),
+      normalizeError(new AskwebError('test')),
       normalizeError({ status: 401, message: 'Unauthorized' }),
       normalizeError({ status: 429, message: 'Too many requests' }),
       normalizeError({ status: 500, message: 'Server error' }),
@@ -216,7 +216,7 @@ describe('normalizeError', () => {
     ]
 
     errors.forEach((error) => {
-      expect(error).toBeInstanceOf(WebxaError)
+      expect(error).toBeInstanceOf(AskwebError)
     })
   })
 })
