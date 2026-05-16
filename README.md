@@ -107,13 +107,15 @@ When no provider is specified, the tool auto-detects the first available one fro
 ## CLI
 
 ```bash
-askweb search "your query" --provider brave --max-results 5
+askweb "your query"
+askweb --provider brave "your query" --max-results 5
 askweb search "your query" --json
 askweb providers
 ```
 
 | Command | Description |
 |---------|-------------|
+| `askweb <query>` | Search the web using the default provider |
 | `askweb search <query>` | Search the web using a provider |
 | `askweb providers` | List built-in providers |
 

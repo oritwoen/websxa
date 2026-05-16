@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
 import { defineCommand, runMain } from 'citty'
+import { normalizeMainArgs } from './cli-args.ts'
 import { version } from './version.ts'
 
 const main = defineCommand({
   meta: {
-    name: 'webxa',
+    name: 'askweb',
     version,
     description: 'Unified web search provider for agents and CLI',
   },
@@ -15,4 +16,4 @@ const main = defineCommand({
   },
 })
 
-await runMain(main)
+await runMain(main, { rawArgs: normalizeMainArgs(process.argv.slice(2)) })
