@@ -2,8 +2,8 @@
 
 [![npm version](https://img.shields.io/npm/v/askweb?style=flat&colorA=130f40&colorB=474787)](https://npmjs.com/package/askweb)
 [![npm downloads](https://img.shields.io/npm/dm/askweb?style=flat&colorA=130f40&colorB=474787)](https://npm.chart.dev/askweb)
-[![license](https://img.shields.io/github/license/oritwoen/websxa?style=flat&colorA=130f40&colorB=474787)](https://github.com/oritwoen/websxa/blob/main/LICENSE)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/oritwoen/websxa)
+[![license](https://img.shields.io/github/license/oritwoen/askweb?style=flat&colorA=130f40&colorB=474787)](https://github.com/oritwoen/askweb/blob/main/LICENSE)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/oritwoen/askweb)
 
 One API for Brave, Exa, Tavily, SerpAPI, and SearXNG. Write your search logic once, swap the provider string, done.
 
@@ -163,7 +163,7 @@ try {
 }
 ```
 
-A 401 from Exa and a 401 from Brave both become `AuthError`. A 429 from any provider becomes `RateLimitError` with a `retryAfter` value. Everything else is `HTTPError` or the base `WebxaError`.
+A 401 from Exa and a 401 from Brave both become `AuthError`. A 429 from any provider becomes `RateLimitError` with a `retryAfter` value. Everything else is `HTTPError` or the base `AskwebError`.
 
 For safety, `HTTPError.url` redacts sensitive query params and URL userinfo credentials before surfacing the URL in error messages.
 

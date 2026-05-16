@@ -3,11 +3,11 @@
 
 ## v0.1.2
 
-[compare changes](https://github.com/oritwoen/websxa/compare/v0.1.1...v0.1.2)
+[compare changes](https://github.com/oritwoen/askweb/compare/v0.1.1...v0.1.2)
 
 ### 🩹 Fixes
 
-- **version:** Inline package version ([#2](https://github.com/oritwoen/websxa/pull/2))
+- **version:** Inline package version ([#2](https://github.com/oritwoen/askweb/pull/2))
 
 ### ❤️ Contributors
 

@@ -1,13 +1,13 @@
-/** Base error for all webxa operations. */
-export class WebxaError extends Error {
+/** Base error for all askweb operations. */
+export class AskwebError extends Error {
   constructor(message: string, options?: ErrorOptions) {
     super(message, options)
-    this.name = 'WebxaError'
+    this.name = 'AskwebError'
   }
 }
 
 /** Non-auth HTTP error with status code, URL, and response body. */
-export class HTTPError extends WebxaError {
+export class HTTPError extends AskwebError {
   readonly statusCode: number
   readonly url: string
   readonly body: string
@@ -34,7 +34,7 @@ export class HTTPError extends WebxaError {
 }
 
 /** Thrown when a provider rejects the API key (HTTP 401). */
-export class AuthError extends WebxaError {
+export class AuthError extends AskwebError {
   readonly provider: string
 
   constructor(message: string, provider: string) {
@@ -45,7 +45,7 @@ export class AuthError extends WebxaError {
 }
 
 /** Thrown on HTTP 429. Check {@link retryAfter} for seconds until retry. */
-export class RateLimitError extends WebxaError {
+export class RateLimitError extends AskwebError {
   readonly retryAfter: number
 
   constructor(retryAfter: number) {
@@ -56,7 +56,7 @@ export class RateLimitError extends WebxaError {
 }
 
 /** Thrown when {@link create} is called with an unregistered provider name. */
-export class UnknownProviderError extends WebxaError {
+export class UnknownProviderError extends AskwebError {
   readonly provider: string
 
   constructor(provider: string) {
@@ -67,7 +67,7 @@ export class UnknownProviderError extends WebxaError {
 }
 
 /** Thrown when the search query is empty or whitespace-only. */
-export class EmptyQueryError extends WebxaError {
+export class EmptyQueryError extends AskwebError {
   constructor() {
     super('Search query cannot be empty')
     this.name = 'EmptyQueryError'
@@ -75,7 +75,7 @@ export class EmptyQueryError extends WebxaError {
 }
 
 /** Thrown when no provider can be selected from env or registry. */
-export class NoProviderConfiguredError extends WebxaError {
+export class NoProviderConfiguredError extends AskwebError {
   constructor() {
     super('No web search provider configured. Set an API key env var or register a provider.')
     this.name = 'NoProviderConfiguredError'
@@ -83,7 +83,7 @@ export class NoProviderConfiguredError extends WebxaError {
 }
 
 /** Thrown when a date filter string is not valid ISO 8601 or the range is reversed. */
-export class InvalidDateFilterError extends WebxaError {
+export class InvalidDateFilterError extends AskwebError {
   readonly field: string
   readonly value: string
   readonly reason: string
@@ -130,10 +130,10 @@ export function validateDateFilters(startPublishedDate?: string, endPublishedDat
 }
 
 /**
- * Convert any caught error into a typed {@link WebxaError} subclass.
+ * Convert any caught error into a typed {@link AskwebError} subclass.
  * Maps HTTP status codes to specific error types (401 → AuthError, 429 → RateLimitError).
  */
-export function normalizeError(error: unknown, provider?: string): WebxaError {
+export function normalizeError(error: unknown, provider?: string): AskwebError {
   if (error instanceof HTTPError && error.statusCode === 401) {
     return new AuthError(
       `Authentication failed: ${error.body || 'Invalid or missing API key'}`,
@@ -141,7 +141,7 @@ export function normalizeError(error: unknown, provider?: string): WebxaError {
     )
   }
 
-  if (error instanceof WebxaError) {
+  if (error instanceof AskwebError) {
     return error
   }
 
@@ -171,15 +171,15 @@ export function normalizeError(error: unknown, provider?: string): WebxaError {
         if (status >= 500) {
           return new HTTPError(status, '', message)
         }
-        return new WebxaError(message)
+        return new AskwebError(message)
     }
   }
 
   if (error instanceof Error) {
-    return new WebxaError(error.message)
+    return new AskwebError(error.message)
   }
 
-  return new WebxaError(String(error))
+  return new AskwebError(String(error))
 }
 
 export const DEFAULT_RETRY_AFTER = 60

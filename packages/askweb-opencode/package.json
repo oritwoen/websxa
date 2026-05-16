@@ -1,5 +1,5 @@
 {
-  "name": "websxa-opencode",
+  "name": "askweb-opencode",
   "version": "0.1.2",
   "description": "OpenCode plugin for askweb web search. Temporary standalone package until subpath imports land upstream.",
   "type": "module",
@@ -8,11 +8,11 @@
   "author": "oritwoen (https://github.com/oritwoen)",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/oritwoen/websxa.git",
-    "directory": "packages/websxa-opencode"
+    "url": "git+https://github.com/oritwoen/askweb.git",
+    "directory": "packages/askweb-opencode"
   },
-  "homepage": "https://github.com/oritwoen/websxa#readme",
-  "bugs": "https://github.com/oritwoen/websxa/issues",
+  "homepage": "https://github.com/oritwoen/askweb#readme",
+  "bugs": "https://github.com/oritwoen/askweb/issues",
   "exports": {
     ".": {
       "types": "./dist/index.d.mts",

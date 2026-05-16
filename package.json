@@ -10,10 +10,10 @@
   "author": "oritwoen (https://github.com/oritwoen)",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/oritwoen/websxa.git"
+    "url": "git+https://github.com/oritwoen/askweb.git"
   },
-  "homepage": "https://github.com/oritwoen/websxa#readme",
-  "bugs": "https://github.com/oritwoen/websxa/issues",
+  "homepage": "https://github.com/oritwoen/askweb#readme",
+  "bugs": "https://github.com/oritwoen/askweb/issues",
   "exports": {
     ".": {
       "types": "./dist/index.d.mts",
