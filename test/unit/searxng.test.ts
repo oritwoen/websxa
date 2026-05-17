@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const mockGetJSON = vi.fn()
 
@@ -43,6 +43,11 @@ describe('searxng provider', () => {
     mockGetJSON.mockResolvedValue(searxngResponse)
   })
 
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
+  })
+
   describe('self-registration', () => {
     it('registers itself on import', () => {
       expect(has('searxng')).toBe(true)
@@ -63,6 +68,26 @@ describe('searxng provider', () => {
     it('returns searxng', () => {
       const provider = create('searxng', {})
       expect(provider.name()).toBe('searxng')
+    })
+  })
+
+  describe('isAvailable()', () => {
+    it('aborts the reachability probe within the provider contract', async () => {
+      vi.useFakeTimers()
+      const fetchMock = vi.fn((_url: string | URL, init?: RequestInit) => {
+        return new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new Error('aborted')))
+        })
+      })
+      vi.stubGlobal('fetch', fetchMock)
+
+      const provider = create('searxng', {})
+      const availability = provider.isAvailable?.()
+
+      await vi.advanceTimersByTimeAsync(1999)
+      expect(fetchMock).toHaveBeenCalledOnce()
+      await vi.advanceTimersByTimeAsync(1)
+      await expect(availability).resolves.toBe(false)
     })
   })
 

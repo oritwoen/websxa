@@ -34,8 +34,14 @@
     "askweb": "./dist/cli.mjs"
   },
   "files": [
-    "dist"
+    "dist",
+    "packages/pi/extensions"
   ],
+  "pi": {
+    "extensions": [
+      "./packages/pi/extensions/*.ts"
+    ]
+  },
   "engines": {
     "node": ">=22"
   },
@@ -43,7 +49,7 @@
   "scripts": {
     "build": "obuild",
     "dev": "obuild --stub",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.extensions.json",
     "test": "vitest",
     "test:run": "vitest --run",
     "prepack": "pnpm run build",
@@ -56,14 +62,19 @@
     "agents",
     "provider",
     "unified",
-    "typescript"
+    "typescript",
+    "pi-extension",
+    "pi-package"
   ],
   "devDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*",
     "@opencode-ai/plugin": "^1.2.23",
     "@types/node": "latest",
     "ai": "^6.0.116",
     "changelogen": "latest",
     "obuild": "latest",
+    "typebox": "^1.1.38",
     "typescript": "latest",
     "vitest": "latest",
     "zod": "^4.3.6"
@@ -75,15 +86,27 @@
     "ofetch": "^1.5.1"
   },
   "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*",
     "@opencode-ai/plugin": ">=1.0.0",
     "ai": "^6.0.116",
+    "typebox": "^1.1.33",
     "zod": "^4.3.6"
   },
   "peerDependenciesMeta": {
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    },
+    "@earendil-works/pi-tui": {
+      "optional": true
+    },
     "@opencode-ai/plugin": {
       "optional": true
     },
     "ai": {
+      "optional": true
+    },
+    "typebox": {
       "optional": true
     },
     "zod": {

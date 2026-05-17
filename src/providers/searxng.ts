@@ -23,6 +23,8 @@ interface SearXNGSearchResponse {
   query: string
 }
 
+const SEARXNG_PROBE_TIMEOUT_MS = 2000
+
 class SearXNGProvider implements SearchProvider {
   private readonly client: Client
   private readonly baseURL: string
@@ -34,6 +36,31 @@ class SearXNGProvider implements SearchProvider {
 
   name(): string {
     return 'searxng'
+  }
+
+  /**
+   * Quick reachability probe for self-hosted instances. Returns false instead
+   * of throwing so {@link searchAll} can skip an unreachable instance silently.
+   * Treats any HTTP response (even 4xx) as reachable — the host is up.
+   * Uses a <=2s timeout so a dead endpoint does not stall fan-out.
+   */
+  async isAvailable(): Promise<boolean> {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), SEARXNG_PROBE_TIMEOUT_MS)
+    try {
+      const response = await fetch(this.baseURL, {
+        method: 'GET',
+        signal: controller.signal,
+      })
+      // Any HTTP status means the host responded; treat as reachable.
+      return typeof response.status === 'number'
+    }
+    catch {
+      return false
+    }
+    finally {
+      clearTimeout(timer)
+    }
   }
 
   async search(query: string, options?: SearchOptions): Promise<SearchResult[]> {
