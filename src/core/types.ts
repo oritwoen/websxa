@@ -25,6 +25,14 @@ export interface SearchOptions {
 export interface SearchProvider {
   name(): string
   search(query: string, options?: SearchOptions): Promise<SearchResult[]>
+  /**
+   * Optional reachability probe. Used by {@link searchAll} and async detection
+   * helpers to skip self-hosted / optional providers whose endpoint is not
+   * responding, without failing the fan-out. Providers backed by paid APIs
+   * usually omit this and rely on env-var presence as the configured signal.
+   * Should resolve quickly (<= ~2s) and never throw.
+   */
+  isAvailable?(): Promise<boolean>
 }
 
 export interface ProviderConfig {

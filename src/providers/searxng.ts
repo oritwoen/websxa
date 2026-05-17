@@ -36,6 +36,31 @@ class SearXNGProvider implements SearchProvider {
     return 'searxng'
   }
 
+  /**
+   * Quick reachability probe for self-hosted instances. Returns false instead
+   * of throwing so {@link searchAll} can skip an unreachable instance silently.
+   * Treats any HTTP response (even 4xx) as reachable — the host is up.
+   * Uses a 1500ms timeout so a dead localhost:8080 does not stall fan-out.
+   */
+  async isAvailable(): Promise<boolean> {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 1500)
+    try {
+      const response = await fetch(this.baseURL, {
+        method: 'GET',
+        signal: controller.signal,
+      })
+      // Any HTTP status means the host responded; treat as reachable.
+      return typeof response.status === 'number'
+    }
+    catch {
+      return false
+    }
+    finally {
+      clearTimeout(timer)
+    }
+  }
+
   async search(query: string, options?: SearchOptions): Promise<SearchResult[]> {
     try {
       const params = new URLSearchParams({

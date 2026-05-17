@@ -15,5 +15,12 @@ export { register, create, providers, has } from './core/registry.ts'
 export { searchAll, searchAllDetailed } from './core/all.ts'
 export type { SearchAllOptions, SearchAllResult, SearchAllResponse, ProviderError } from './core/all.ts'
 
-export { resolveDefaultProvider, detectAvailableProviders, listProviders } from './core/resolve.ts'
+export {
+  resolveDefaultProvider,
+  resolveDefaultProviderAsync,
+  detectAvailableProviders,
+  detectAvailableProvidersAsync,
+  listProviders,
+  listProvidersAsync,
+} from './core/resolve.ts'
 export type { ProviderStatus } from './core/resolve.ts'

@@ -1,7 +1,7 @@
 import type { SearchResult, SearchOptions } from './types.ts'
 import { UnknownProviderError, NoProviderConfiguredError, EmptyQueryError, validateDateFilters } from './errors.ts'
 import { create, has } from './registry.ts'
-import { detectAvailableProviders } from './resolve.ts'
+import { detectAvailableProvidersAsync } from './resolve.ts'
 
 export interface SearchAllOptions extends SearchOptions {
   providers?: string[]
@@ -51,7 +51,7 @@ export async function searchAllDetailed(query: string, options?: SearchAllOption
     }
   }
 
-  const providerNames = providerList ?? detectAvailableProviders()
+  const providerNames = providerList ?? await detectAvailableProvidersAsync()
 
   if (providerNames.length === 0) {
     throw new NoProviderConfiguredError()
