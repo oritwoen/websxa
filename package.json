@@ -35,11 +35,11 @@
   },
   "files": [
     "dist",
-    "extensions"
+    "packages/pi/extensions"
   ],
   "pi": {
     "extensions": [
-      "./extensions/*.ts"
+      "./packages/pi/extensions/*.ts"
     ]
   },
   "engines": {

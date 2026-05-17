@@ -114,13 +114,13 @@ pi install git:github.com/oritwoen/askweb
 
 Provided tools:
 
-- `askweb` — search the web with a single provider, or `provider="all"` to fan out across every configured provider in parallel
-- `askweb_providers` — list built-in providers and which env vars are configured
+- `askweb` — search the web with a single provider, or `provider="all"` to fan out across every configured/reachable provider in parallel
+- `askweb_providers` — list built-in providers, env-var configuration, and reachability status
 
 Provided slash commands:
 
 - `/web [query]` — quick search from the TUI; results are shown as a selector and the chosen URL is pasted into the editor
-- `/web-providers` — show available providers and which env vars configure them
+- `/web-providers` — show provider configuration and reachability status
 
 The extension reuses the same env vars as the library (`EXA_API_KEY`, `BRAVE_API_KEY`, `TAVILY_API_KEY`, `SERPAPI_API_KEY`, or a self-hosted SearXNG). Pi bundles `@earendil-works/pi-coding-agent`, `@earendil-works/pi-tui`, and `typebox`, so no extra installs are needed.
 

@@ -82,6 +82,18 @@ export class NoProviderConfiguredError extends AskwebError {
   }
 }
 
+/** Thrown when providers are configured but none are currently reachable. */
+export class NoProviderAvailableError extends AskwebError {
+  readonly providers: readonly string[]
+
+  constructor(providers: readonly string[]) {
+    const providerList = providers.length > 0 ? providers.join(', ') : 'unknown'
+    super(`No configured web search provider is currently reachable: ${providerList}`)
+    this.name = 'NoProviderAvailableError'
+    this.providers = providers
+  }
+}
+
 /** Thrown when a date filter string is not valid ISO 8601 or the range is reversed. */
 export class InvalidDateFilterError extends AskwebError {
   readonly field: string

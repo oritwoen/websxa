@@ -1,6 +1,6 @@
 import type { AgentToolResult, ExtensionAPI } from "@earendil-works/pi-coding-agent"
 import { Text } from "@earendil-works/pi-tui"
-import { Type } from "typebox"
+import { Type, type Static } from "typebox"
 import type {
   ProviderError,
   ProviderStatus,
@@ -36,9 +36,7 @@ let askwebModulePromise: Promise<AskwebModule> | undefined
 
 function loadAskweb(): Promise<AskwebModule> {
   if (!askwebModulePromise) {
-    askwebModulePromise = import("askweb").catch(
-      () => import("../src/index.ts") as unknown as Promise<AskwebModule>,
-    )
+    askwebModulePromise = import("askweb").catch(() => import("../../../src/index.ts"))
   }
   return askwebModulePromise
 }
@@ -49,16 +47,48 @@ const PROVIDER_HINT = `Provider to use. One of: ${PROVIDERS.join(", ")}. "auto" 
 const MAX_RESULTS_HARD_CAP = 20
 const DEFAULT_MAX_RESULTS = 10
 
-type SearchParams = {
-  query: string
-  provider?: string
-  maxResults?: number
-  includeDomains?: string[]
-  excludeDomains?: string[]
-  category?: string
-  startPublishedDate?: string
-  endPublishedDate?: string
-}
+const searchParameters = Type.Object({
+  query: Type.String({ description: "Search query." }),
+  provider: Type.Optional(Type.String({ description: PROVIDER_HINT })),
+  maxResults: Type.Optional(
+    Type.Number({
+      description: `Maximum results to return. Defaults to ${DEFAULT_MAX_RESULTS}.`,
+      minimum: 1,
+      maximum: MAX_RESULTS_HARD_CAP,
+    }),
+  ),
+  includeDomains: Type.Optional(
+    Type.Array(Type.String(), {
+      description: 'Only return results from these domains (e.g. ["github.com", "stackoverflow.com"]).',
+    }),
+  ),
+  excludeDomains: Type.Optional(
+    Type.Array(Type.String(), {
+      description: "Exclude results from these domains.",
+    }),
+  ),
+  category: Type.Optional(
+    Type.String({
+      description: 'Search category (e.g. "news", "general"). Provider support varies.',
+    }),
+  ),
+  startPublishedDate: Type.Optional(
+    Type.String({
+      description: 'ISO date filter: only results published after this date (e.g. "2024-01-01").',
+    }),
+  ),
+  endPublishedDate: Type.Optional(
+    Type.String({
+      description: "ISO date filter: only results published before this date.",
+    }),
+  ),
+})
+
+const emptyParameters = Type.Object({})
+
+type SearchParams = Static<typeof searchParameters>
+type EmptyParams = Static<typeof emptyParameters>
+type ProviderInput = (typeof PROVIDERS)[number]
 
 export default function askwebExtension(pi: ExtensionAPI) {
   pi.registerTool({
@@ -75,60 +105,28 @@ export default function askwebExtension(pi: ExtensionAPI) {
       "Pass maxResults conservatively (5-10) unless the user asks for more.",
       "Forward includeDomains/excludeDomains/startPublishedDate/endPublishedDate when the user gives concrete filters.",
     ],
-    parameters: Type.Object({
-      query: Type.String({ description: "Search query." }),
-      provider: Type.Optional(Type.String({ description: PROVIDER_HINT })),
-      maxResults: Type.Optional(
-        Type.Number({
-          description: `Maximum results to return. Defaults to ${DEFAULT_MAX_RESULTS}.`,
-          minimum: 1,
-          maximum: MAX_RESULTS_HARD_CAP,
-        }),
-      ),
-      includeDomains: Type.Optional(
-        Type.Array(Type.String(), {
-          description: 'Only return results from these domains (e.g. ["github.com", "stackoverflow.com"]).',
-        }),
-      ),
-      excludeDomains: Type.Optional(
-        Type.Array(Type.String(), {
-          description: "Exclude results from these domains.",
-        }),
-      ),
-      category: Type.Optional(
-        Type.String({
-          description: 'Search category (e.g. "news", "general"). Provider support varies.',
-        }),
-      ),
-      startPublishedDate: Type.Optional(
-        Type.String({
-          description: 'ISO date filter: only results published after this date (e.g. "2024-01-01").',
-        }),
-      ),
-      endPublishedDate: Type.Optional(
-        Type.String({
-          description: "ISO date filter: only results published before this date.",
-        }),
-      ),
-    }) as never,
+    parameters: searchParameters,
     renderCall(args, theme) {
-      return new Text(renderSearchCall(args as SearchParams, theme), 0, 0)
+      return new Text(renderSearchCall(args, theme), 0, 0)
     },
-    async execute(_toolCallId, rawParams) {
-      const params = rawParams as SearchParams
+    async execute(_toolCallId, params): Promise<AgentToolResult<SearchDetails>> {
       const query = params.query.trim()
       if (!query) {
         throw new Error("Query cannot be empty")
       }
 
       const rawProvider = (params.provider ?? "").trim() || undefined
-      if (rawProvider && !isKnownProvider(rawProvider)) {
-        throw new Error(
-          `Unknown provider "${rawProvider}". Available: ${PROVIDERS.join(", ")}.`,
-        )
+      let providerName: "all" | WebSearchProviderName | undefined
+      if (rawProvider === undefined) {
+        providerName = undefined
+      } else {
+        if (!isKnownProvider(rawProvider)) {
+          throw new Error(
+            `Unknown provider "${rawProvider}". Available: ${PROVIDERS.join(", ")}.`,
+          )
+        }
+        providerName = normalizeProvider(rawProvider)
       }
-      // Normalize: "auto" is a sentinel meaning "resolve default from env".
-      const providerName = rawProvider === "auto" ? undefined : rawProvider
 
       const searchOptions: SearchOptions = stripUndefined({
         maxResults: params.maxResults,
@@ -170,7 +168,7 @@ export default function askwebExtension(pi: ExtensionAPI) {
       }
 
       const resolvedProvider =
-        (providerName as WebSearchProviderName | undefined) ?? askweb.resolveDefaultProvider()
+        providerName ?? (await askweb.resolveDefaultProviderAsync())
       const provider = askweb.create(resolvedProvider)
       const results = await provider.search(query, searchOptions)
       const header = buildHeader({
@@ -204,11 +202,11 @@ export default function askwebExtension(pi: ExtensionAPI) {
     promptGuidelines: [
       "Use askweb_providers before askweb if it is unclear which providers are available.",
     ],
-    parameters: Type.Object({}) as never,
+    parameters: emptyParameters,
     renderCall(_args, theme) {
       return new Text(theme.fg("toolTitle", theme.bold("askweb_providers")), 0, 0)
     },
-    async execute() {
+    async execute(_toolCallId: string, _params: EmptyParams): Promise<AgentToolResult<{ providers: ProviderStatus[] }>> {
       const askweb = await loadAskweb()
       const statuses = await askweb.listProvidersAsync()
       const lines = statuses.map((s) => formatProviderStatus(s))
@@ -227,6 +225,10 @@ export default function askwebExtension(pi: ExtensionAPI) {
   pi.registerCommand("web", {
     description: "Search the web with askweb: /web [query]",
     handler: async (args, ctx) => {
+      if (!ctx.hasUI) {
+        return
+      }
+
       const initial = args.trim()
       const query =
         initial || (await ctx.ui.input("Search the web", "Enter a search query"))
@@ -243,7 +245,7 @@ export default function askwebExtension(pi: ExtensionAPI) {
       } catch (err) {
         if (ctx.hasUI) {
           ctx.ui.notify(
-            `No reachable askweb providers. ${(err as Error).message}`,
+            `No reachable askweb providers. ${errorMessage(err)}`,
             "warning",
           )
         }
@@ -258,7 +260,7 @@ export default function askwebExtension(pi: ExtensionAPI) {
       } catch (err) {
         if (ctx.hasUI) {
           ctx.ui.notify(
-            `askweb ${providerName} failed: ${(err as Error).message}`,
+            `askweb ${providerName} failed: ${errorMessage(err)}`,
             "error",
           )
         }
@@ -305,18 +307,30 @@ export default function askwebExtension(pi: ExtensionAPI) {
   })
 }
 
-function isKnownProvider(name: string): boolean {
-  return (PROVIDERS as readonly string[]).includes(name)
+function isKnownProvider(name: string): name is ProviderInput {
+  return PROVIDERS.some((provider) => provider === name)
 }
 
-function stripUndefined<T extends Record<string, unknown>>(input: T): T {
-  const out: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(input)) {
-    if (value !== undefined) {
-      out[key] = value
-    }
+function normalizeProvider(provider: ProviderInput | undefined): "all" | WebSearchProviderName | undefined {
+  if (provider === "auto") {
+    return undefined
   }
-  return out as T
+  return provider
+}
+
+function stripUndefined(input: SearchOptions): SearchOptions {
+  const out: SearchOptions = {}
+  if (input.maxResults !== undefined) out.maxResults = input.maxResults
+  if (input.includeDomains !== undefined) out.includeDomains = input.includeDomains
+  if (input.excludeDomains !== undefined) out.excludeDomains = input.excludeDomains
+  if (input.startPublishedDate !== undefined) out.startPublishedDate = input.startPublishedDate
+  if (input.endPublishedDate !== undefined) out.endPublishedDate = input.endPublishedDate
+  if (input.category !== undefined) out.category = input.category
+  return out
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
 }
 
 type HeaderOpts =

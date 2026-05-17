@@ -1,6 +1,6 @@
 import { builtinProviders, type WebSearchProviderName } from './providers.ts'
 import { create, has } from './registry.ts'
-import { NoProviderConfiguredError } from './errors.ts'
+import { NoProviderAvailableError, NoProviderConfiguredError } from './errors.ts'
 
 const envKeys: Record<string, WebSearchProviderName> = {
   EXA_API_KEY: 'exa',
@@ -76,15 +76,8 @@ export function listProviders(): ProviderStatus[] {
 export async function detectAvailableProvidersAsync(): Promise<WebSearchProviderName[]> {
   const candidates = detectAvailableProviders()
   const probes = await Promise.all(candidates.map(async name => {
-    try {
-      const provider = create(name)
-      if (typeof provider.isAvailable !== 'function') return name
-      const ok = await provider.isAvailable()
-      return ok ? name : null
-    }
-    catch {
-      return null
-    }
+    const reachable = await probeConfiguredProvider(name)
+    return reachable === false ? null : name
   }))
   return probes.filter((n): n is WebSearchProviderName => n !== null)
 }
@@ -101,15 +94,8 @@ export async function listProvidersAsync(): Promise<ProviderStatus[]> {
     const configured = available.includes(name)
     const base: ProviderStatus = { name, configured, envVar: envVarFor(name) }
     if (!configured) return base
-    try {
-      const provider = create(name)
-      if (typeof provider.isAvailable !== 'function') return base
-      const reachable = await provider.isAvailable()
-      return { ...base, reachable }
-    }
-    catch {
-      return { ...base, reachable: false }
-    }
+    const reachable = await probeConfiguredProvider(name)
+    return reachable === undefined ? base : { ...base, reachable }
   }))
 }
 
@@ -120,8 +106,27 @@ export async function listProvidersAsync(): Promise<ProviderStatus[]> {
  * (e.g. SearXNG on `localhost:8080` without a running instance).
  */
 export async function resolveDefaultProviderAsync(): Promise<WebSearchProviderName> {
-  const available = await detectAvailableProvidersAsync()
-  const first = available[0]
-  if (!first) throw new NoProviderConfiguredError()
-  return first
+  const candidates = detectAvailableProviders()
+  for (const name of candidates) {
+    const reachable = await probeConfiguredProvider(name)
+    if (reachable !== false) {
+      return name
+    }
+  }
+
+  if (candidates.length === 0) {
+    throw new NoProviderConfiguredError()
+  }
+  throw new NoProviderAvailableError(candidates)
+}
+
+async function probeConfiguredProvider(name: WebSearchProviderName): Promise<boolean | undefined> {
+  try {
+    const provider = create(name)
+    if (typeof provider.isAvailable !== 'function') return undefined
+    return await provider.isAvailable()
+  }
+  catch {
+    return false
+  }
 }

@@ -5,6 +5,7 @@ import {
   AuthError,
   RateLimitError,
   UnknownProviderError,
+  NoProviderAvailableError,
   InvalidDateFilterError,
   normalizeError,
   parseRetryAfter,
@@ -81,6 +82,16 @@ describe('UnknownProviderError', () => {
     const error = new UnknownProviderError('unknown-provider')
     expect(error.provider).toBe('unknown-provider')
     expect(error.name).toBe('UnknownProviderError')
+    expect(error).toBeInstanceOf(AskwebError)
+  })
+})
+
+describe('NoProviderAvailableError', () => {
+  it('should include configured but unreachable provider names', () => {
+    const error = new NoProviderAvailableError(['searxng'])
+    expect(error.providers).toEqual(['searxng'])
+    expect(error.message).toContain('searxng')
+    expect(error.name).toBe('NoProviderAvailableError')
     expect(error).toBeInstanceOf(AskwebError)
   })
 })

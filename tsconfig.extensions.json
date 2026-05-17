@@ -2,12 +2,16 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "askweb": ["./src/index.ts"]
+    },
     "outDir": "./dist-extensions",
     "noEmit": true,
     "declaration": false,
     "declarationMap": false,
     "sourceMap": false
   },
-  "include": ["extensions/**/*.ts"],
+  "include": ["packages/pi/extensions/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

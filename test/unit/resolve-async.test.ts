@@ -5,6 +5,7 @@ import {
   resolveDefaultProviderAsync,
 } from '../../src/core/resolve.ts'
 import { searchAllDetailed } from '../../src/core/all.ts'
+import { NoProviderAvailableError } from '../../src/core/errors.ts'
 import '../../src/providers/index.ts'
 
 const envKeys = ['EXA_API_KEY', 'BRAVE_API_KEY', 'TAVILY_API_KEY', 'SERPAPI_API_KEY'] as const
@@ -28,7 +29,9 @@ describe('resolve async', () => {
   })
 
   function stubFetch(impl: (url: string | URL) => Promise<Response> | Response) {
-    vi.stubGlobal('fetch', vi.fn((url: string | URL) => Promise.resolve(impl(url))))
+    const fetchMock = vi.fn((url: string | URL) => Promise.resolve(impl(url)))
+    vi.stubGlobal('fetch', fetchMock)
+    return fetchMock
   }
 
   describe('detectAvailableProvidersAsync', () => {
@@ -80,15 +83,16 @@ describe('resolve async', () => {
   })
 
   describe('resolveDefaultProviderAsync', () => {
-    it('skips unreachable searxng and falls back to env provider', async () => {
+    it('short-circuits before probing later providers when env default has no probe', async () => {
       process.env.EXA_API_KEY = 'k'
-      stubFetch(() => { throw new Error('down') })
+      const fetchMock = stubFetch(() => { throw new Error('unexpected probe') })
       expect(await resolveDefaultProviderAsync()).toBe('exa')
+      expect(fetchMock).not.toHaveBeenCalled()
     })
 
-    it('throws when no providers are configured or reachable', async () => {
+    it('throws availability error when configured providers are unreachable', async () => {
       stubFetch(() => { throw new Error('down') })
-      await expect(resolveDefaultProviderAsync()).rejects.toThrow()
+      await expect(resolveDefaultProviderAsync()).rejects.toThrow(NoProviderAvailableError)
     })
   })
 
@@ -111,6 +115,11 @@ describe('resolve async', () => {
       const response = await searchAllDetailed('test')
       const errProviders = response.errors.map(e => e.provider)
       expect(errProviders).not.toContain('searxng')
+    })
+
+    it('throws availability error when auto-detected providers are all unreachable', async () => {
+      stubFetch(() => { throw new Error('ECONNREFUSED') })
+      await expect(searchAllDetailed('test')).rejects.toThrow(NoProviderAvailableError)
     })
   })
 })
