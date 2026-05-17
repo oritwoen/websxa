@@ -104,6 +104,26 @@ tools: { webSearch: searchTool }
 
 When no provider is specified, the tool auto-detects the first available one from environment variables.
 
+### Pi extension
+
+`askweb` ships with a [pi](https://pi.dev) extension that registers two tools and two commands. Install the package straight from GitHub:
+
+```bash
+pi install git:github.com/oritwoen/askweb
+```
+
+Provided tools:
+
+- `askweb` — search the web with a single provider, or `provider="all"` to fan out across every configured provider in parallel
+- `askweb_providers` — list built-in providers and which env vars are configured
+
+Provided slash commands:
+
+- `/web [query]` — quick search from the TUI; results are shown as a selector and the chosen URL is pasted into the editor
+- `/web-providers` — show available providers and which env vars configure them
+
+The extension reuses the same env vars as the library (`EXA_API_KEY`, `BRAVE_API_KEY`, `TAVILY_API_KEY`, `SERPAPI_API_KEY`, or a self-hosted SearXNG). Pi bundles `@earendil-works/pi-coding-agent`, `@earendil-works/pi-tui`, and `typebox`, so no extra installs are needed.
+
 ## CLI
 
 ```bash
@@ -134,6 +154,20 @@ askweb providers
 | SearXNG | - | None | Self-hosted |
 | SerpAPI | `SERPAPI_API_KEY` | Query param | 100 queries/mo |
 | Tavily | `TAVILY_API_KEY` | Body | 1k queries/mo |
+
+### Result shape
+
+All providers always return `{ url, title, snippet }`. Optional fields depend on what each provider's native API exposes — `askweb` passes them through without flattening:
+
+| Provider | Optional fields populated |
+|----------|---------------------------|
+| Exa     | `text` (full page), `highlights[]`, `summary` (AI), `score`, `publishedDate`, `author`, `image`, `favicon` |
+| Tavily  | `text` (raw_content, full HTML/markdown), `score`, `publishedDate` |
+| Brave   | `text` (joined `extra_snippets`), `favicon` |
+| SerpAPI | `image` (thumbnail), `publishedDate`, `favicon`, `metadata.{position, source, displayedLink}` |
+| SearXNG | `image`, `score`, `publishedDate`, `metadata.{engine, engines, category}` |
+
+Pick the provider that fits the shape you want. Exa is closest to "AI search" (summary + highlights + full text on request). Tavily is best when you want the raw page content. Brave/SerpAPI/SearXNG are classic SERP-style metadata.
 
 SearXNG requires no API key. It's a self-hosted metasearch engine. By default askweb connects to `http://localhost:8080`. Override with `baseURL`:
 

@@ -1,0 +1,408 @@
+import type { AgentToolResult, ExtensionAPI } from "@earendil-works/pi-coding-agent"
+import { Text } from "@earendil-works/pi-tui"
+import { Type } from "typebox"
+import type {
+  ProviderError,
+  ProviderStatus,
+  SearchAllResult,
+  SearchOptions,
+  SearchResult,
+  WebSearchProviderName,
+} from "askweb"
+
+type SearchSingleDetails = {
+  mode: "single"
+  query: string
+  provider: WebSearchProviderName
+  options: SearchOptions
+  count: number
+  results: SearchResult[]
+}
+
+type SearchAllDetails = {
+  mode: "all"
+  query: string
+  options: SearchOptions
+  count: number
+  results: SearchAllResult[]
+  errors: { provider: string; error: string }[]
+}
+
+type SearchDetails = SearchSingleDetails | SearchAllDetails
+
+type AskwebModule = typeof import("askweb")
+
+let askwebModulePromise: Promise<AskwebModule> | undefined
+
+function loadAskweb(): Promise<AskwebModule> {
+  if (!askwebModulePromise) {
+    askwebModulePromise = import("askweb").catch(
+      () => import("../src/index.ts") as unknown as Promise<AskwebModule>,
+    )
+  }
+  return askwebModulePromise
+}
+
+const PROVIDERS = ["auto", "all", "brave", "exa", "searxng", "serpapi", "tavily"] as const
+const PROVIDER_HINT = `Provider to use. One of: ${PROVIDERS.join(", ")}. "auto" (or omit) picks the first available provider from env. Use "all" to query every configured provider in parallel.`
+
+const MAX_RESULTS_HARD_CAP = 20
+const DEFAULT_MAX_RESULTS = 10
+
+type SearchParams = {
+  query: string
+  provider?: string
+  maxResults?: number
+  includeDomains?: string[]
+  excludeDomains?: string[]
+  category?: string
+  startPublishedDate?: string
+  endPublishedDate?: string
+}
+
+export default function askwebExtension(pi: ExtensionAPI) {
+  pi.registerTool({
+    name: "askweb",
+    label: "Askweb Search",
+    description:
+      "Search the web using one of the configured providers (Brave, Exa, Tavily, SerpAPI, SearXNG) or fan out to every available provider with provider=all. Always returns {url, title, snippet}; optional fields vary by provider: Exa adds summary/highlights/full text + score/author/image, Tavily adds full raw_content + score, Brave adds extra_snippets, SerpAPI adds thumbnail + position metadata, SearXNG adds engine metadata. Pick provider for the shape you need.",
+    promptSnippet:
+      "Search the web with askweb. Use provider=all to query every configured provider in parallel.",
+    promptGuidelines: [
+      "Use askweb when the user explicitly asks for fresh web information, news, references, or links.",
+      "Prefer a single provider when the user names one; use provider=all when freshness or coverage matters and at least two providers are configured.",
+      "For AI-style summaries/highlights/full page text prefer Exa; for raw full page content prefer Tavily; for classic SERP metadata Brave/SerpAPI/SearXNG are fine.",
+      "Pass maxResults conservatively (5-10) unless the user asks for more.",
+      "Forward includeDomains/excludeDomains/startPublishedDate/endPublishedDate when the user gives concrete filters.",
+    ],
+    parameters: Type.Object({
+      query: Type.String({ description: "Search query." }),
+      provider: Type.Optional(Type.String({ description: PROVIDER_HINT })),
+      maxResults: Type.Optional(
+        Type.Number({
+          description: `Maximum results to return. Defaults to ${DEFAULT_MAX_RESULTS}.`,
+          minimum: 1,
+          maximum: MAX_RESULTS_HARD_CAP,
+        }),
+      ),
+      includeDomains: Type.Optional(
+        Type.Array(Type.String(), {
+          description: 'Only return results from these domains (e.g. ["github.com", "stackoverflow.com"]).',
+        }),
+      ),
+      excludeDomains: Type.Optional(
+        Type.Array(Type.String(), {
+          description: "Exclude results from these domains.",
+        }),
+      ),
+      category: Type.Optional(
+        Type.String({
+          description: 'Search category (e.g. "news", "general"). Provider support varies.',
+        }),
+      ),
+      startPublishedDate: Type.Optional(
+        Type.String({
+          description: 'ISO date filter: only results published after this date (e.g. "2024-01-01").',
+        }),
+      ),
+      endPublishedDate: Type.Optional(
+        Type.String({
+          description: "ISO date filter: only results published before this date.",
+        }),
+      ),
+    }) as never,
+    renderCall(args, theme) {
+      return new Text(renderSearchCall(args as SearchParams, theme), 0, 0)
+    },
+    async execute(_toolCallId, rawParams) {
+      const params = rawParams as SearchParams
+      const query = params.query.trim()
+      if (!query) {
+        throw new Error("Query cannot be empty")
+      }
+
+      const rawProvider = (params.provider ?? "").trim() || undefined
+      if (rawProvider && !isKnownProvider(rawProvider)) {
+        throw new Error(
+          `Unknown provider "${rawProvider}". Available: ${PROVIDERS.join(", ")}.`,
+        )
+      }
+      // Normalize: "auto" is a sentinel meaning "resolve default from env".
+      const providerName = rawProvider === "auto" ? undefined : rawProvider
+
+      const searchOptions: SearchOptions = stripUndefined({
+        maxResults: params.maxResults,
+        includeDomains: params.includeDomains,
+        excludeDomains: params.excludeDomains,
+        category: params.category,
+        startPublishedDate: params.startPublishedDate,
+        endPublishedDate: params.endPublishedDate,
+      })
+
+      const askweb = await loadAskweb()
+
+      if (providerName === "all") {
+        const response = await askweb.searchAllDetailed(query, searchOptions)
+        const results = response.results
+        const okProviders = Array.from(new Set(results.map((r) => r.provider))).sort()
+        const header = buildHeader({
+          mode: "all",
+          query,
+          count: results.length,
+          okProviders,
+          errCount: response.errors.length,
+        })
+        const result: AgentToolResult<SearchDetails> = {
+          content: [{ type: "text", text: withHeader(header, formatAllResults(results, response.errors)) }],
+          details: {
+            mode: "all",
+            query,
+            options: searchOptions,
+            count: results.length,
+            results,
+            errors: response.errors.map((e) => ({
+              provider: e.provider,
+              error: e.error.message,
+            })),
+          },
+        }
+        return result
+      }
+
+      const resolvedProvider =
+        (providerName as WebSearchProviderName | undefined) ?? askweb.resolveDefaultProvider()
+      const provider = askweb.create(resolvedProvider)
+      const results = await provider.search(query, searchOptions)
+      const header = buildHeader({
+        mode: "single",
+        provider: resolvedProvider,
+        query,
+        count: results.length,
+        autoSelected: providerName === undefined,
+      })
+      const result: AgentToolResult<SearchDetails> = {
+        content: [{ type: "text", text: withHeader(header, formatResults(results)) }],
+        details: {
+          mode: "single",
+          query,
+          provider: resolvedProvider,
+          options: searchOptions,
+          count: results.length,
+          results,
+        },
+      }
+      return result
+    },
+  })
+
+  pi.registerTool({
+    name: "askweb_providers",
+    label: "Askweb Providers",
+    description:
+      "List built-in web search providers and which ones are currently configured via environment variables.",
+    promptSnippet: "List configured askweb providers.",
+    promptGuidelines: [
+      "Use askweb_providers before askweb if it is unclear which providers are available.",
+    ],
+    parameters: Type.Object({}) as never,
+    renderCall(_args, theme) {
+      return new Text(theme.fg("toolTitle", theme.bold("askweb_providers")), 0, 0)
+    },
+    async execute() {
+      const askweb = await loadAskweb()
+      const statuses = await askweb.listProvidersAsync()
+      const lines = statuses.map((s) => formatProviderStatus(s))
+      return {
+        content: [
+          {
+            type: "text",
+            text: lines.length > 0 ? lines.join("\n") : "No providers registered.",
+          },
+        ],
+        details: { providers: statuses },
+      }
+    },
+  })
+
+  pi.registerCommand("web", {
+    description: "Search the web with askweb: /web [query]",
+    handler: async (args, ctx) => {
+      const initial = args.trim()
+      const query =
+        initial || (await ctx.ui.input("Search the web", "Enter a search query"))
+      if (!query?.trim()) {
+        return
+      }
+
+      const trimmed = query.trim()
+      const askweb = await loadAskweb()
+
+      let providerName: WebSearchProviderName
+      try {
+        providerName = await askweb.resolveDefaultProviderAsync()
+      } catch (err) {
+        if (ctx.hasUI) {
+          ctx.ui.notify(
+            `No reachable askweb providers. ${(err as Error).message}`,
+            "warning",
+          )
+        }
+        return
+      }
+
+      let results: SearchResult[]
+      try {
+        results = await askweb
+          .create(providerName)
+          .search(trimmed, { maxResults: DEFAULT_MAX_RESULTS })
+      } catch (err) {
+        if (ctx.hasUI) {
+          ctx.ui.notify(
+            `askweb ${providerName} failed: ${(err as Error).message}`,
+            "error",
+          )
+        }
+        return
+      }
+
+      if (results.length === 0) {
+        if (ctx.hasUI) {
+          ctx.ui.notify(`No results for "${trimmed}" via ${providerName}.`, "warning")
+        }
+        return
+      }
+
+      if (!ctx.hasUI) {
+        return
+      }
+
+      const labels = results.map(formatResult)
+      const selected = await ctx.ui.select(
+        `askweb (${providerName}) — ${trimmed}`,
+        labels,
+      )
+      if (!selected) {
+        return
+      }
+      const index = labels.indexOf(selected)
+      const picked = results[index]
+      if (!picked) {
+        return
+      }
+      ctx.ui.pasteToEditor(picked.url)
+      ctx.ui.notify(`Pasted ${picked.url}`, "info")
+    },
+  })
+
+  pi.registerCommand("web-providers", {
+    description: "List configured askweb providers",
+    handler: async (_args, ctx) => {
+      const askweb = await loadAskweb()
+      const statuses = await askweb.listProvidersAsync()
+      if (!ctx.hasUI) return
+      ctx.ui.notify(statuses.map(formatProviderStatus).join("\n"), "info")
+    },
+  })
+}
+
+function isKnownProvider(name: string): boolean {
+  return (PROVIDERS as readonly string[]).includes(name)
+}
+
+function stripUndefined<T extends Record<string, unknown>>(input: T): T {
+  const out: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(input)) {
+    if (value !== undefined) {
+      out[key] = value
+    }
+  }
+  return out as T
+}
+
+type HeaderOpts =
+  | { mode: "single"; provider: string; query: string; count: number; autoSelected: boolean }
+  | { mode: "all"; query: string; count: number; okProviders: string[]; errCount: number }
+
+function buildHeader(o: HeaderOpts): string {
+  if (o.mode === "single") {
+    const tag = o.autoSelected ? " (auto-selected default)" : ""
+    return `[provider=${o.provider}] ${o.count} result(s) for "${o.query}"${tag}`
+  }
+  const list = o.okProviders.length > 0 ? ` [${o.okProviders.join(", ")}]` : ""
+  const errs = o.errCount > 0 ? ` (+${o.errCount} provider error(s))` : ""
+  return `[provider=all] ${o.count} result(s) for "${o.query}" via ${o.okProviders.length} provider(s)${list}${errs}`
+}
+
+function withHeader(header: string, body: string[]): string {
+  const joined = body.join("\n")
+  return joined ? `${header}\n\n${joined}` : `${header}\nNo results.`
+}
+
+function formatProviderStatus(s: ProviderStatus): string {
+  // Symbol legend:
+  //   ✓  configured AND reachable (or no probe = trust env)
+  //   ⚠  configured BUT probe returned false (e.g. SearXNG endpoint down)
+  //   ·  not configured (no env var / not registered)
+  let symbol = "·"
+  if (s.configured) {
+    symbol = s.reachable === false ? "⚠" : "✓"
+  }
+  const envLabel = s.envVar ? ` (${s.envVar})` : ""
+  const reachabilityNote =
+    s.configured && s.reachable === false ? " — unreachable" : ""
+  return `${symbol} ${s.name}${envLabel}${reachabilityNote}`
+}
+
+function formatResult(result: SearchResult, index?: number): string {
+  const head = index === undefined ? "" : `${index + 1}. `
+  const title = result.title || "(no title)"
+  const snippet = result.snippet ? ` — ${truncateSingleLine(result.snippet, 120)}` : ""
+  return `${head}${title}\n   ${result.url}${snippet}`
+}
+
+function formatResults(results: SearchResult[]): string[] {
+  return results.map((r, i) => formatResult(r, i))
+}
+
+function formatAllResults(
+  results: SearchAllResult[],
+  errors: ProviderError[],
+): string[] {
+  const lines = results.map((r, i) => `${formatResult(r, i)}\n   [${r.provider}]`)
+  if (errors.length > 0) {
+    lines.push("", "Provider errors:")
+    for (const e of errors) {
+      lines.push(`  ${e.provider}: ${e.error.message}`)
+    }
+  }
+  return lines
+}
+
+function renderSearchCall(params: SearchParams, theme: RenderTheme): string {
+  const parts = [theme.fg("toolTitle", theme.bold("askweb"))]
+  parts.push(theme.fg("dim", `"${truncateSingleLine(params.query, 120)}"`))
+  if (params.provider) parts.push(theme.fg("muted", `provider=${params.provider}`))
+  if (params.maxResults !== undefined)
+    parts.push(theme.fg("muted", `max=${params.maxResults}`))
+  if (params.includeDomains?.length)
+    parts.push(theme.fg("muted", `include=${params.includeDomains.join(",")}`))
+  if (params.excludeDomains?.length)
+    parts.push(theme.fg("muted", `exclude=${params.excludeDomains.join(",")}`))
+  if (params.category) parts.push(theme.fg("muted", `cat=${params.category}`))
+  if (params.startPublishedDate)
+    parts.push(theme.fg("muted", `from=${params.startPublishedDate}`))
+  if (params.endPublishedDate)
+    parts.push(theme.fg("muted", `to=${params.endPublishedDate}`))
+  return parts.join(" ")
+}
+
+function truncateSingleLine(text: string, maxLength: number): string {
+  const singleLine = text.replace(/\s+/g, " ").trim()
+  return singleLine.length <= maxLength ? singleLine : `${singleLine.slice(0, maxLength - 1)}…`
+}
+
+type RenderTheme = {
+  bold(text: string): string
+  fg(color: string, text: string): string
+}
+
